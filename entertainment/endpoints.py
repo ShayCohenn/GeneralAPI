@@ -17,7 +17,7 @@ emoji_api = os.getenv("EMOJI_API")
 @router.get("/dad-joke")
 def dad_joke():
     try:
-        headers = {"Accept": "application/json"}
+        headers = {"Accept": "application/json"} 
         response = requests.get(dad_jokes_api, headers=headers) 
 
         if response.status_code == 200:
