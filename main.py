@@ -7,4 +7,4 @@ app = FastAPI()
 
 app.include_router(qr_router, prefix="/qr")
 app.include_router(stocks_router, prefix="/finance")
-app.include_router(jokes_router, prefix="/jokes")
+app.include_router(jokes_router, prefix="/entertainment")

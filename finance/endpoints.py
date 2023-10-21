@@ -26,7 +26,7 @@ def get_info(ticker: str):
 def get_value(ticker: str):
     try:
         data = verify_ticker(ticker)
-        current_price = data.history(period="1d").iloc[-1]
+        current_price = data.history(period="1d")['Close'].iloc[-1]
         return {"current_value": current_price}
     except TickerNotFoundError as e:
         raise e
