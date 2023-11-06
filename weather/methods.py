@@ -10,6 +10,8 @@ API_KEY = os.getenv("OPEN_WEATHER_API")
 
 BASE_URL = f"https://api.openweathermap.org/data/2.5/weather?appid={API_KEY}"
 
+# ---------------------------------------------------------------- Reuseable methods ----------------------------------------------------------------
+
 def convert_temp(value: float, unit: str):
     if not isinstance(value, (int, float)):
         return "Error: an error occurred"
@@ -47,6 +49,7 @@ def convert_to_date(value: int, shift: int):
     dt = datetime.datetime.utcfromtimestamp(timestamp)
     return dt.strftime("%Y-%m-%d %H:%M:%S")
 
+# ---------------------------------------------------------------- Methods for the API ------------------------------------------------------------
 
 def get_general_weather(city: str, lang: str):
     response = requests.get(f"{BASE_URL}&q={city}&lang={lang}")
