@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from QR.qr import router as qr_router
 from finance.endpoints import router as stocks_router
 from entertainment.endpoints import router as jokes_router
+from weather.endpoints import router as weather_router
 
 app = FastAPI()
 
@@ -18,3 +19,4 @@ app.add_middleware(
 app.include_router(qr_router, prefix="/qr")
 app.include_router(stocks_router, prefix="/finance")
 app.include_router(jokes_router, prefix="/entertainment")
+app.include_router(weather_router, prefix="/weather")
