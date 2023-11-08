@@ -21,6 +21,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.route("/test")
+@limiter.limit("1/second")
+async def test(request: Request):
+    return {"msg":"test"}
+
 app.include_router(qr_router, prefix="/qr")
 app.include_router(stocks_router, prefix="/finance")
 app.include_router(jokes_router, prefix="/entertainment")
