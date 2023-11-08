@@ -21,7 +21,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.route("/test")
+@app.get("/test")
 @limiter.limit("4/minute")
 async def test(request: Request):
     return {"msg":"test"}
