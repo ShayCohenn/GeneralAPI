@@ -22,7 +22,7 @@ app.add_middleware(
 )
 
 @app.route("/test")
-@limiter.limit("1/second")
+@limiter.limit("4/minute")
 async def test(request: Request):
     return {"msg":"test"}
 
