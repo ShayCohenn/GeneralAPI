@@ -24,7 +24,7 @@ app.add_middleware(
 @app.get("/test")
 @limiter.limit("4/minute")
 async def test(request: Request):
-    return {"msg":"test"}
+    return {"msg":"test 2.0"}
 
 app.include_router(qr_router, prefix="/qr")
 app.include_router(stocks_router, prefix="/finance")
