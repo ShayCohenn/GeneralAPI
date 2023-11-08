@@ -1,12 +1,14 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 import tempfile
 import segno
 import base64
+from rate_limit import limiter
 
 router = APIRouter()
 
 @router.get("/generate")
-def generate_qr_code(data: str, back_color: str = "white", front_color: str = "black", scale:int = 20, border_size:int = 1, border_color:str = "white"):
+@limiter.limit("2/second")
+async def generate_qr_code(request: Request, data: str, back_color: str = "white", front_color: str = "black", scale:int = 20, border_size:int = 1, border_color:str = "white"):
     try:
         # Create a temporary file
         with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as temp_file:

@@ -1,7 +1,8 @@
 import os
 import requests
 from dotenv import load_dotenv
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
+from rate_limit import limiter
 
 load_dotenv()
 
@@ -15,7 +16,8 @@ riddles_api = os.getenv("RIDDLES_API")
 emoji_api = os.getenv("EMOJI_API")
 
 @router.get("/dad-joke")
-def dad_joke():
+@limiter.limit("1/second")
+def dad_joke(request: Request):
     try:
         headers = {"Accept": "application/json"} 
         response = requests.get(dad_jokes_api, headers=headers) 
@@ -29,7 +31,8 @@ def dad_joke():
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/yo-momma-joke")
-def yo_momma_joke():
+@limiter.limit("1/second")
+def yo_momma_joke(request: Request):
     try:
         response = requests.get(yo_momma_api)
         if(response.status_code == 200):
@@ -41,7 +44,8 @@ def yo_momma_joke():
         raise HTTPException(status_code=500, detail=str(e))
     
 @router.get("/chuck-norris-joke")
-def chuck_norris_joke():
+@limiter.limit("1/second")
+def chuck_norris_joke(request: Request):
     try:
         response = requests.get(chuck_norris_api)
         if(response.status_code == 200):
@@ -53,7 +57,8 @@ def chuck_norris_joke():
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/random-fact")
-def random_fact():
+@limiter.limit("1/second")
+def random_fact(request: Request):
     try:
         response = requests.get(facts_api)
         if(response.status_code == 200):
@@ -65,7 +70,8 @@ def random_fact():
         raise HTTPException(status_code=500, detail=str(e))
     
 @router.get("/random-riddle")
-def random_riddle():
+@limiter.limit("1/second")
+def random_riddle(request: Request):
     try:
         response = requests.get(riddles_api)
         if(response.status_code == 200):
