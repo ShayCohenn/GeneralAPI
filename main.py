@@ -7,6 +7,7 @@ from weather.endpoints import router as weather_router
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from rate_limit import limiter
+from slowapi.util import get_remote_address
 
 app = FastAPI()
 app.state.limiter = limiter
@@ -22,9 +23,9 @@ app.add_middleware(
 )
 
 @app.get("/test")
-@limiter.limit("4/minute")
+@limiter.limit("4/minute", key_func=get_remote_address)
 async def test(request: Request):
-    return {"msg":"test 2.0"}
+    return {"msg":"test 3.0"}
 
 app.include_router(qr_router, prefix="/qr")
 app.include_router(stocks_router, prefix="/finance")
