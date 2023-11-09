@@ -1,18 +1,21 @@
 from fastapi import APIRouter, HTTPException, Request
-from weather.methods import get_general_weather, get_current_temp
-from rate_limit import limiter
 from sports.methods import scrape_soccer_matches
+from slowapi.util import get_remote_address
+from rate_limit import limiter
 
 router = APIRouter()
 
 @router.get("/football/today")
-def get_todays_football():
+@limiter.limit("1 per 2 seconds", key_func=get_remote_address)
+def get_todays_football(request: Request):
     return scrape_soccer_matches(day=0)
 
 @router.get("/football/tomorrow")
-def get_todays_football():
+@limiter.limit("1 per 2 seconds", key_func=get_remote_address)
+def get_todays_football(request: Request):
     return scrape_soccer_matches(day=1)
 
 @router.get("/football/2days")
-def get_todays_football():
+@limiter.limit("1 per 2 seconds", key_func=get_remote_address)
+def get_todays_football(request: Request):
     return scrape_soccer_matches(day=2)

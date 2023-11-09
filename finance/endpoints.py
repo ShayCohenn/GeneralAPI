@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Request
 import yfinance as yf
-from rate_limit import limiter
+from rate_limit import limiter, DEFAULT_LIMITER
 
 router = APIRouter()
 
@@ -16,7 +16,7 @@ def verify_ticker(ticker: str):
     raise TickerNotFoundError(ticker)
 
 @router.get("/general-info")
-@limiter.limit("1/second")
+@limiter.limit(DEFAULT_LIMITER)
 def get_info(request: Request, ticker: str):
     try:
         data = verify_ticker(ticker)
@@ -25,7 +25,7 @@ def get_info(request: Request, ticker: str):
         raise e
 
 @router.get("/current-value")
-@limiter.limit("1/second")
+@limiter.limit(DEFAULT_LIMITER)
 def get_value(request: Request, ticker: str):
     try:
         data = verify_ticker(ticker)
@@ -35,7 +35,7 @@ def get_value(request: Request, ticker: str):
         raise e
     
 @router.get("/currency-convert")
-@limiter.limit("1/second")
+@limiter.limit(DEFAULT_LIMITER)
 def get_exchange_rate(request: Request, from_curr: str, to_curr: str, amount: float = 1):
     try:
         data = verify_ticker(f'{from_curr}{to_curr}=X')
