@@ -24,9 +24,9 @@ app.add_middleware(
 )
 
 @app.get("/test")
-@limiter.limit("4/minute", key_func=get_remote_address)
+@limiter.limit("1 per 10 seconds", key_func=get_remote_address)
 async def test(request: Request):
-    return {"msg":"test 4.0"}
+    return {"msg":"test 2.0"}
 
 app.include_router(qr_router, prefix="/qr")
 app.include_router(stocks_router, prefix="/finance")
