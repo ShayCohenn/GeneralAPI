@@ -1,11 +1,6 @@
-import os
 import requests
 from bs4 import BeautifulSoup
-from dotenv import load_dotenv
-
-load_dotenv()
-
-FOOTBALL_URL = os.getenv("FOOTBALL_WEBSITE_URL")
+from constants import FOOTBALL_URL
 
 def scrape_soccer_matches(day: int):
     match_details_list = []  # List to store match details
@@ -32,7 +27,7 @@ def scrape_soccer_matches(day: int):
 
                         match_details = {
                             'event': tournament.find("a", class_="football-matches__heading").text.strip(),
-                            'time': game_time.text.strip().replace('GMT', '').replace('\xa0', ''),
+                            'time': game_time.text.strip().replace('\xa0', ' '),
                             'team1': team1_name,
                             'team2': team2_name
                         }

@@ -1,14 +1,6 @@
-import os
 import requests
 import datetime
-from dotenv import load_dotenv
-from fastapi import HTTPException
-
-load_dotenv()
-
-API_KEY = os.getenv("OPEN_WEATHER_API")
-
-BASE_URL = f"https://api.openweathermap.org/data/2.5/weather?appid={API_KEY}"
+from constants import WEATHER_API_URL
 
 # ---------------------------------------------------------------- Reuseable methods ----------------------------------------------------------------
 
@@ -52,7 +44,7 @@ def convert_to_date(value: int, shift: int):
 # ---------------------------------------------------------------- Methods for the API ------------------------------------------------------------
 
 def get_general_weather(city: str, lang: str):
-    response = requests.get(f"{BASE_URL}&q={city}&lang={lang}")
+    response = requests.get(f"{WEATHER_API_URL}&q={city}&lang={lang}")
     if response.status_code == 200:
         res_json = response.json()
         weather = {
@@ -93,13 +85,17 @@ def get_general_weather(city: str, lang: str):
             "sunset": convert_to_date(res_json["sys"]["sunset"], res_json["timezone"])
         }
         return weather
+    elif response.status_code == 404:
+        return "404"
     else:
-        raise HTTPException(status_code=500, detail="an error occurred")
+        return None
 
 def get_current_temp(city: str, unit: str):
-    response = requests.get(f"{BASE_URL}&q={city}")
+    response = requests.get(f"{WEATHER_API_URL}&q={city}")
     if response.status_code == 200:
         res_json = response.json()
         return {"current temperature":convert_temp(res_json["main"]["temp"], unit)}
+    elif response.status_code == 404:
+        return "404"
     else:
-        raise HTTPException(status_code=500, detail="an error occurred")
+        raise None
