@@ -25,4 +25,4 @@ MAIN_ERROR_MESSAGE = {"error":"an error has occured please try again later, if t
 
 DEFAULT_LIMITER = "1/second"
 SMALL_LIMITER = "2/second"
-LARGE_LIMITER = "1 per 2 seconds; 10 per minute;"
+LARGE_LIMITER = "1 per 2 seconds; 10 per minute"
