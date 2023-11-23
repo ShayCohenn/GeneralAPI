@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Request
-import tempfile
 from fastapi.responses import JSONResponse
+import tempfile
 import segno
 import base64
+import requests
+from io import BytesIO
 from rate_limit import limiter
 from constants import MAIN_ERROR_MESSAGE, SMALL_LIMITER
 

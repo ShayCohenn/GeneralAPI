@@ -21,9 +21,9 @@ def scrape_soccer_matches(day: int):
                         game_time = game.find("time")
                         teams = game.find_all("span", class_="team-name__long")
 
-                        # Extract team names
-                        team1_name = teams[0].text.strip().replace('\xa0', ' ')  # Remove leading/trailing whitespaces and replace \xa0 with space
-                        team2_name = teams[1].text.strip().replace('\xa0', ' ')  # Remove leading/trailing whitespaces and replace \xa0 with space
+                        # Extract team names and remove leading/trailing whitespaces and replace \xa0 with space
+                        team1_name = teams[0].text.strip().replace('\xa0', ' ')
+                        team2_name = teams[1].text.strip().replace('\xa0', ' ')
 
                         match_details = {
                             'event': tournament.find("a", class_="football-matches__heading").text.strip(),

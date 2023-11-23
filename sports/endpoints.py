@@ -16,4 +16,3 @@ def get_football_matches(request: Request, day: int = 0):
         return JSONResponse(status_code=200, content={"error":"could not find anything for this day"})
     except:
         return JSONResponse(status_code=500, content=MAIN_ERROR_MESSAGE)
-
