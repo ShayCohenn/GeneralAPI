@@ -40,7 +40,7 @@ def get_exchange_rate(request: Request, from_curr: str, to_curr: str, amount: fl
     
 @router.get("/stock-data")
 @limiter.limit(LARGE_LIMITER)
-def get_stock_data(request: Request, ticker: str, start:str, end:str):
+async def get_stock_data(request: Request, ticker: str, start:str, end:str):
     try:
         try:
             start_date = datetime.strptime(start, '%Y-%m-%d')
