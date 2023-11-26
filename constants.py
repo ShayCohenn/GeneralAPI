@@ -1,4 +1,3 @@
-
 # ------------------------------------------------------------------- Environment Variables ---------------------------------------------------------
 
 import os
@@ -21,7 +20,7 @@ FOOTBALL_URL = os.getenv("FOOTBALL_WEBSITE_URL")
 
 MAIN_ERROR_MESSAGE = {"error":"an error has occured please try again later, if this error persists please contact 'shay91847@gmail.com'"}
 
-# ------------------------------------------------------------------- Limiters ----------------------------------------------------------------------
+# ------------------------------------------------------------------- Requests Limiters ----------------------------------------------------------------------
 
 DEFAULT_LIMITER = "1/second"
 SMALL_LIMITER = "2/second"
