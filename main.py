@@ -8,6 +8,7 @@ from finance.endpoints import router as stocks_router
 from entertainment.endpoints import router as jokes_router
 from weather.endpoints import router as weather_router
 from sports.endpoints import router as sports_router
+from data.endpoints import router as data_router
 
 # ----------------------------------------------- App Initialization ----------------------------------------------------------------------
 
@@ -36,3 +37,4 @@ app.include_router(stocks_router, prefix="/finance")
 app.include_router(jokes_router, prefix="/entertainment")
 app.include_router(weather_router, prefix="/weather")
 app.include_router(sports_router, prefix="/sports")
+app.include_router(data_router, prefix="/data")

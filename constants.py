@@ -11,8 +11,8 @@ CHUCK_NORRIS_API = os.getenv("CHUCK_NORRIS_API")
 FACTS_API = os.getenv("FACTS_API")
 RIDDLES_API = os.getenv("RIDDLES_API")
 
-WEATHER_API = os.getenv("OPEN_WEATHER_API")
-WEATHER_API_URL = f"https://api.openweathermap.org/data/2.5/weather?appid={WEATHER_API}"
+WEATHER_API_KEY = os.getenv("OPEN_WEATHER_API")
+WEATHER_API_URL = os.getenv("WEATHER_API_URL")
 
 FOOTBALL_URL = os.getenv("FOOTBALL_WEBSITE_URL")
 
