@@ -1,7 +1,9 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from constants import MAIN_404_MESSAGE
 from rate_limit import limiter
 from QR.qr import router as qr_router
 from finance.endpoints import router as stocks_router
@@ -25,10 +27,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/test")
-@limiter.limit("1 per 10 seconds")
-async def test(request: Request):
-    return {"msg":"test 3.0"}
+@app.exception_handler(404)
+async def custom_404_handler(_, __):
+    return JSONResponse(status_code=404, content=MAIN_404_MESSAGE)
 
 # ----------------------------------------------- Including The Routers -------------------------------------------------------------------
 

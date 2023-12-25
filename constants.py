@@ -19,6 +19,7 @@ FOOTBALL_URL = os.getenv("FOOTBALL_WEBSITE_URL")
 # ------------------------------------------------------------------- Messages ----------------------------------------------------------------------
 
 MAIN_ERROR_MESSAGE = {"error":"an error has occured please try again later, if this error persists please contact 'shay91847@gmail.com'"}
+MAIN_404_MESSAGE = {"error":"Could not find this endpoint. Visit our documentation website at https://generalapi-docs.vercel.app/"}
 
 # ------------------------------------------------------------------- Requests Limiters ----------------------------------------------------------------------
 
