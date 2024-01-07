@@ -16,6 +16,8 @@ WEATHER_API_URL = os.getenv("WEATHER_API_URL")
 
 FOOTBALL_URL = os.getenv("FOOTBALL_WEBSITE_URL")
 
+MONGODB_URI = os.getenv("MONGODB_URI")
+
 # ------------------------------------------------------------------- Messages ----------------------------------------------------------------------
 
 MAIN_ERROR_MESSAGE = {"error":"an error has occured please try again later, if this error persists please contact 'shay91847@gmail.com'"}
