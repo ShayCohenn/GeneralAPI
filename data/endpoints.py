@@ -10,16 +10,22 @@ router = APIRouter()
 # Create a new client and connect to the server
 client = MongoClient(MONGODB_URI, server_api=ServerApi('1'))
 
-db = client["sample_airbnb"]
-collection = db['listingsAndReviews']
-
-@router.get("/test")
-@limiter.limit(DEFAULT_LIMITER)
-def test(request: Request):
+@router.get("/cities")
+def cities(request: Request, city: str, country: str = ""):
+    db = client["Locations"]
+    collection = db['Cities']
     # Example query: find all documents in the collection
-    result = collection.find({"beds":5})
-    # Convert the result to a list (if needed) and return it
-    docs = list(result)
-    items = [{"_id": doc.get("_id"), "space": doc.get("space")} for doc in docs]
-    return {"test":items[0]}
+    query = {"name": {"$regex": f'^{city}', "$options": 'i'}}
+    
+    # Add country filter if specified
+    if country:
+        query["country"] = {"$regex": country, "$options": 'i'}
+
+    results = list(collection.find(query).sort([("name", 1)]))
+    results.sort(key=lambda x: len(x["name"]))
+
+    items = [{"city": result.get("name"), "country": result.get("country")} for result in results]
+    if len(items) == 0:
+        return {"error":"Couldn't find what you were looking for..."}
+    return items
 
