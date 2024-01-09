@@ -3,3 +3,4 @@ __pycache__
 .env
 index.html
 test.py
+countries.json
