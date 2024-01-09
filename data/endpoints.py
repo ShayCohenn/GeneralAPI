@@ -17,7 +17,7 @@ countries_collection = locations_db['Countries']
 
 @router.get("/cities")
 @limiter.limit(DEFAULT_LIMITER)
-def cities(request: Request, city: str = "", country: str = "", flag: bool = False, phone_code: bool = False, emoji: bool = False):
+def cities(request: Request, city: str = "", country: str = "", flag: bool = False, dial_code: bool = False, emoji: bool = False):
     # Example query: find all documents in the collection
     query = {}
     
@@ -62,13 +62,13 @@ def cities(request: Request, city: str = "", country: str = "", flag: bool = Fal
             flag_image = country_details.get("image", None)
             item["flag"] = flag_image
             
-        if phone_code:
-            dial_code = country_details.get("dial_code", None)
-            item["dial_code"] = dial_code
+        if dial_code:
+            code = country_details.get("dial_code", None)
+            item["dial_code"] = code
 
         if emoji:
-            dial_code = country_details.get("emoji", None)
-            item["emoji"] = dial_code
+            emj = country_details.get("emoji", None)
+            item["emoji"] = emj
 
         items.append(item)
 
