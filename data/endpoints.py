@@ -57,6 +57,7 @@ def cities(request: Request, city: str = "", country: str = "", flag: bool = Fal
         
         item = {
             "city": city_name,
+            "country":country_name,
         }
         if flag:
             flag_image = country_details.get("image", None)
