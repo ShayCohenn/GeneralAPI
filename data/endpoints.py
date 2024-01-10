@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Request
-from fastapi.responses import JSONResponse
 from constants import DEFAULT_LIMITER, MONGODB_URI
 from rate_limit import limiter
 from pymongo.mongo_client import MongoClient
@@ -15,6 +14,19 @@ locations_db = client["Locations"]
 cities_collection = locations_db['Cities']
 countries_collection = locations_db['Countries']
 
+top11_cities = [
+    {"city":"Tokyo","country":"Japan"}, 
+    {"city":"Delhi","country":"India"}, 
+    {"city":"Shanghai","country":"China"}, 
+    {"city":"São Paulo","country":"Brazil"}, 
+    {"city":"Mexico City","country":"Mexico"}, 
+    {"city":"Mumbai","country":"India"}, 
+    {"city":"Beijing","country":"China"}, 
+    {"city":"Dhaka","country":"Bangladesh"}, 
+    {"city":"Osaka","country":"Japan"}, 
+    {"city":"New York City","country":"United States"}, 
+    ]
+
 @router.get("/cities")
 @limiter.limit(DEFAULT_LIMITER)
 def cities(request: Request, city: str = "", country: str = "", flag: bool = False, dial_code: bool = False, emoji: bool = False):
@@ -29,10 +41,13 @@ def cities(request: Request, city: str = "", country: str = "", flag: bool = Fal
     if country:
         query["country"] = {"$regex": f'^{country}', "$options": 'i'}
 
-    if not query:  # If no filters are specified, return the first 10 results
-        results = list(cities_collection.find().sort([("name", 1)]).limit(10))
+    if not query:  # If no filters are specified, return the top 11 results
+        top_cities_query = {"$or": [{"name": city_data["city"], "country": city_data["country"]} for city_data in top11_cities]}
+        top_cities_results = list(cities_collection.find(top_cities_query).sort([("name", 1)]).limit(11))
+        results = top_cities_results
     else:
         results = list(cities_collection.find(query).sort([("name", 1)]))
+
 
     # Collect unique country names
     country_names = set(result.get("country") for result in results if result.get("country"))
