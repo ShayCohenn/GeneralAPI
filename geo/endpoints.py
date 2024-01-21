@@ -112,7 +112,7 @@ def cities(
 
 @router.get("/countries")
 @limiter.limit(DEFAULT_LIMITER)
-def countries(request: Request, country: str = "", flag: bool = False, phone_code: bool = False, emoji: bool = False):
+def countries(request: Request, country: str = "", flag: bool = False, dial_code: bool = False, emoji: bool = False):
     # Example query: find all documents in the collection
     query = {"name": {"$regex": f'^{country}', "$options": 'i'}}
 
@@ -129,9 +129,9 @@ def countries(request: Request, country: str = "", flag: bool = False, phone_cod
         if flag:
             flag_image = result.get("image", None)
             item["flag"] = flag_image
-        if phone_code:
-            dial_code = result.get("dial_code", None)
-            item["phone_code"] = dial_code
+        if dial_code:
+            code = result.get("dial_code", None)
+            item["dial_code"] = code
         if emoji:
             country_emoji = result.get("emoji", None)
             item["emoji"] = country_emoji
