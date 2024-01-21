@@ -29,25 +29,34 @@ top11_cities = [
 
 @router.get("/cities")
 @limiter.limit(DEFAULT_LIMITER)
-def cities(request: Request, city: str = "", country: str = "", flag: bool = False, dial_code: bool = False, emoji: bool = False):
+def cities(
+    request: Request,
+    city: str = "",
+    country: str = "",
+    flag: bool = False,
+    dial_code: bool = False,
+    emoji: bool = False,
+    country_code: bool = False,
+    limit: int = 200000
+):
     # Example query: find all documents in the collection
     query = {}
-    
+
     # Add city filter if specified
     if city:
         query["name"] = {"$regex": f'^{city}', "$options": 'i'}
-    
+
     # Add country filter if specified
     if country:
         query["country"] = {"$regex": f'^{country}', "$options": 'i'}
 
-    if not query:  # If no filters are specified, return the top 11 results
+    if not query:  # If no filters are specified, return the top results
         top_cities_query = {"$or": [{"name": city_data["city"], "country": city_data["country"]} for city_data in top11_cities]}
-        top_cities_results = list(cities_collection.find(top_cities_query).sort([("name", 1)]).limit(11))
+        top_cities_results = list(cities_collection.find(top_cities_query).sort([("name", 1)]).limit(limit))
         results = top_cities_results
     else:
-        results = list(cities_collection.find(query).sort([("name", 1)]))
-
+        # Sort by population in descending order and then by name
+        results = list(cities_collection.find(query).sort([("population", -1), ("name", 1)]).limit(limit))
 
     # Collect unique country names
     country_names = set(result.get("country") for result in results if result.get("country"))
@@ -59,25 +68,24 @@ def cities(request: Request, city: str = "", country: str = "", flag: bool = Fal
     # Create a dictionary for efficient lookup of country details based on country names
     country_details_dict = {country.get("name"): country for country in country_details_cursor}
 
-    # Sort the results by length of "name" field
-    results.sort(key=lambda x: len(x["name"]))
-
     items = []
+    exact_match_items = []  # To store all items with an exact name match
+
     for result in results:
         city_name = result.get("name")
         country_name = result.get("country")
-        
+
         # Get country details from the dictionary
         country_details = country_details_dict.get(country_name, {})
-        
+
         item = {
             "city": city_name,
-            "country":country_name,
+            "country": country_name,
         }
         if flag:
             flag_image = country_details.get("image", None)
             item["flag"] = flag_image
-            
+
         if dial_code:
             code = country_details.get("dial_code", None)
             item["dial_code"] = code
@@ -85,12 +93,24 @@ def cities(request: Request, city: str = "", country: str = "", flag: bool = Fal
         if emoji:
             emj = country_details.get("emoji", None)
             item["emoji"] = emj
+        if country_code:
+            code = country_details.get("code", None)
+            item["country_code"] = code
 
-        items.append(item)
+        if city_name.lower() == city.lower():
+            # If city_name is an exact match, add it to the list
+            exact_match_items.append(item)
+        else:
+            items.append(item)
+
+    # Add up to 'limit' exact match items at the beginning of the items array
+    items = exact_match_items[:limit] + items
 
     if len(items) == 0:
         return {"error": "Couldn't find what you were looking for..."}
     return items
+
+
 
 @router.get("/countries")
 @limiter.limit(DEFAULT_LIMITER)
