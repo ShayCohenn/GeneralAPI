@@ -52,11 +52,11 @@ def cities(
 
     if not query:  # If no filters are specified, return the top results
         top_cities_query = {"$or": [{"name": city_data["city"], "country": city_data["country"]} for city_data in top11_cities]}
-        top_cities_results = list(cities_collection.find(top_cities_query).sort([("name", 1)]).limit(limit))
+        top_cities_results = list(cities_collection.find(top_cities_query).sort([("name", 1)]))
         results = top_cities_results
     else:
         # Sort by population in descending order and then by name
-        results = list(cities_collection.find(query).sort([("population", -1), ("name", 1)]).limit(limit))
+        results = list(cities_collection.find(query).sort([("population", -1), ("name", 1)]))
 
     # Collect unique country names
     country_names = set(result.get("country") for result in results if result.get("country"))
@@ -104,13 +104,11 @@ def cities(
             items.append(item)
 
     # Add up to 'limit' exact match items at the beginning of the items array
-    items = exact_match_items[:limit] + items
+    items = exact_match_items + items
 
     if len(items) == 0:
         return {"error": "Couldn't find what you were looking for..."}
-    return items
-
-
+    return items[:limit]
 
 @router.get("/countries")
 @limiter.limit(DEFAULT_LIMITER)
