@@ -1,14 +1,12 @@
 from fastapi.responses import JSONResponse
 import requests
-from fastapi import APIRouter, Request
-from constants import DEFAULT_LIMITER, MAIN_ERROR_MESSAGE, DAD_JOKES_API, YO_MOMMA_API, CHUCK_NORRIS_API, FACTS_API, RIDDLES_API
-from rate_limit import limiter
+from fastapi import APIRouter
+from constants import MAIN_ERROR_MESSAGE, DAD_JOKES_API, YO_MOMMA_API, CHUCK_NORRIS_API, FACTS_API, RIDDLES_API
 
 router = APIRouter()
 
 @router.get("/dad-joke")
-@limiter.limit(DEFAULT_LIMITER)
-def dad_joke(request: Request):
+def dad_joke():
     try:
         headers = {"Accept": "application/json"} 
         response = requests.get(DAD_JOKES_API, headers=headers) 
@@ -22,8 +20,7 @@ def dad_joke(request: Request):
         return JSONResponse(status_code=500, content=MAIN_ERROR_MESSAGE)
 
 @router.get("/yo-momma-joke")
-@limiter.limit(DEFAULT_LIMITER)
-def yo_momma_joke(request: Request):
+def yo_momma_joke():
     try:
         response = requests.get(YO_MOMMA_API)
         if(response.status_code == 200):
@@ -35,8 +32,7 @@ def yo_momma_joke(request: Request):
         return JSONResponse(status_code=500, content=MAIN_ERROR_MESSAGE)
     
 @router.get("/chuck-norris-joke")
-@limiter.limit(DEFAULT_LIMITER)
-def chuck_norris_joke(request: Request):
+def chuck_norris_joke():
     try:
         response = requests.get(CHUCK_NORRIS_API)
         if(response.status_code == 200):
@@ -48,8 +44,7 @@ def chuck_norris_joke(request: Request):
         return JSONResponse(status_code=500, content=MAIN_ERROR_MESSAGE)
 
 @router.get("/random-fact")
-@limiter.limit(DEFAULT_LIMITER)
-def random_fact(request: Request):
+def random_fact():
     try:
         response = requests.get(FACTS_API)
         if(response.status_code == 200):
@@ -61,8 +56,7 @@ def random_fact(request: Request):
         return JSONResponse(status_code=500, content=MAIN_ERROR_MESSAGE)
     
 @router.get("/random-riddle")
-@limiter.limit(DEFAULT_LIMITER)
-def random_riddle(request: Request):
+def random_riddle():
     try:
         response = requests.get(RIDDLES_API)
         if(response.status_code == 200):

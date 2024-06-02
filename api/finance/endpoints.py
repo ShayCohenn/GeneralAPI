@@ -1,8 +1,7 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 import yfinance as yf
-from rate_limit import limiter
-from constants import DEFAULT_LIMITER, LARGE_LIMITER, MAIN_ERROR_MESSAGE
+from constants import MAIN_ERROR_MESSAGE
 from datetime import datetime
 import pandas as pd
 
@@ -15,7 +14,8 @@ def verify_ticker(ticker: str):
     return None
 
 @router.get("/general-info")
-def get_general_info(request: Request, ticker: str):
+def get_general_info(ticker: str):
+    """Returns general information about a company"""
     data = verify_ticker(ticker)
     if data:
         info = data.info
@@ -23,8 +23,8 @@ def get_general_info(request: Request, ticker: str):
     return JSONResponse(status_code=500, content=MAIN_ERROR_MESSAGE)
 
 @router.get("/current-value")
-@limiter.limit(DEFAULT_LIMITER)
-def get_value(request: Request, ticker: str):
+def get_value(ticker: str):
+    """Returns current value of a company's stock"""
     try:
         data = verify_ticker(ticker)
         if data:
@@ -43,8 +43,8 @@ def get_value(request: Request, ticker: str):
         return JSONResponse(status_code=500, content=MAIN_ERROR_MESSAGE)
     
 @router.get("/currency-convert")
-@limiter.limit(DEFAULT_LIMITER)
-def get_exchange_rate(request: Request, from_curr: str, to_curr: str, amount: float = 1):
+def get_exchange_rate(from_curr: str, to_curr: str, amount: float = 1):
+    """Currency converter, provide from currency(from_curr) to currency(to_curr) and an amount to convert (default is 1)"""
     try:
         data = verify_ticker(f'{from_curr}{to_curr}=X')
         if data:
@@ -63,8 +63,7 @@ def get_exchange_rate(request: Request, from_curr: str, to_curr: str, amount: fl
         return JSONResponse(status_code=500, content=MAIN_ERROR_MESSAGE)
     
 @router.get("/stock-data")
-@limiter.limit(LARGE_LIMITER)
-async def get_stock_data(request: Request, ticker: str, start:str, end:str, interval:str = "1d"):
+async def get_stock_data(ticker: str, start:str, end:str, interval:str = "1d"):
     try:
         try:
             start_date = datetime.strptime(start, '%Y-%m-%d')
@@ -83,7 +82,7 @@ async def get_stock_data(request: Request, ticker: str, start:str, end:str, inte
         verified_ticker = verify_ticker(ticker)
         if not verified_ticker:
             return JSONResponse(status_code=400, content={"error":f"could not find stock symbol {ticker}"})
-        data = yf.download(ticker, start=start_date, end=end_date, interval=interval)
+        data: pd.DataFrame = yf.download(ticker, start=start_date, end=end_date, interval=interval)
         data = data.reset_index()
         data['Date'] = pd.to_datetime(data['Date'])
         data['Date'] = data['Date'].dt.date

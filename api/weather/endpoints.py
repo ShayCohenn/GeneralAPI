@@ -1,14 +1,12 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter
 from fastapi.responses import JSONResponse
-from constants import DEFAULT_LIMITER, MAIN_ERROR_MESSAGE
-from weather.methods import get_general_weather, get_current_temp
-from rate_limit import limiter
+from constants import MAIN_ERROR_MESSAGE
+from .methods import get_general_weather, get_current_temp
 
 router = APIRouter()
 
 @router.get("/general")
-@limiter.limit(DEFAULT_LIMITER)
-def getGeneralWeather(request: Request, city: str, lang: str = "en"):
+def getGeneralWeather(city: str, lang: str = "en"):
     try:
         response = get_general_weather(city, lang)
         if response == "404":
@@ -21,8 +19,7 @@ def getGeneralWeather(request: Request, city: str, lang: str = "en"):
         return JSONResponse(status_code=500, content=MAIN_ERROR_MESSAGE)
 
 @router.get("/current-temperature")
-@limiter.limit(DEFAULT_LIMITER)
-def getCurrentTemperature(request: Request, city: str, unit: str = "celsius"):
+def getCurrentTemperature(city: str, unit: str = "celsius"):
     try:
         response = get_current_temp(city, unit)
         if response == "404":

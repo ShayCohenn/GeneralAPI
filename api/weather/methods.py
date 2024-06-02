@@ -4,7 +4,7 @@ from constants import WEATHER_API_URL
 
 # ---------------------------------------------------------------- Reuseable methods ----------------------------------------------------------------
 
-def convert_temp(value: float, unit: str):
+def convert_temp(value: float, unit: str) -> float:
     if not isinstance(value, (int, float)):
         return "Error: an error occurred"
     if unit not in ["celsius", "fahrenheit", "kelvin"]:
@@ -18,7 +18,7 @@ def convert_temp(value: float, unit: str):
     elif unit == "kelvin":
         return round(value, 2)
     
-def convert_wind_speed(value: float):
+def convert_wind_speed(value: float) -> float:
     if not isinstance(value, (int, float)):
         return "Error: an error occurred"
     result = {

@@ -1,16 +1,14 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 import tempfile
 import segno
 import base64
-from rate_limit import limiter
-from constants import MAIN_ERROR_MESSAGE, SMALL_LIMITER
+from constants import MAIN_ERROR_MESSAGE
 
 router = APIRouter()
 
 @router.get("/generate")
-@limiter.limit(SMALL_LIMITER)
-def generate_qr_code(request: Request, data: str, back_color: str = "white", front_color: str = "black", scale:int = 20, border_size:int = 1, border_color:str = "white"):
+def generate_qr_code(data: str, back_color: str = "white", front_color: str = "black", scale:int = 20, border_size:int = 1, border_color:str = "white"):
     try:
         # Create a temporary file
         with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as temp_file:

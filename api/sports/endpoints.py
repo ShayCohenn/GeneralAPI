@@ -1,14 +1,12 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter
 from fastapi.responses import JSONResponse
-from sports.methods import scrape_soccer_matches
-from rate_limit import limiter
-from constants import MAIN_ERROR_MESSAGE, LARGE_LIMITER
+from .methods import scrape_soccer_matches
+from constants import MAIN_ERROR_MESSAGE
 
 router = APIRouter()
 
 @router.get("/football/matches")
-@limiter.limit(LARGE_LIMITER)
-def get_football_matches(request: Request, day: int = 0):
+def get_football_matches(day: int = 0):
     try:
         response = scrape_soccer_matches(day=day)
         if len(response) > 0:

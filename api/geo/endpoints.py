@@ -1,18 +1,7 @@
-from fastapi import APIRouter, Request
-from constants import DEFAULT_LIMITER, MONGODB_URI
-from rate_limit import limiter
-from pymongo.mongo_client import MongoClient
-from pymongo.server_api import ServerApi
+from fastapi import APIRouter
+from constants import cities_collection, countries_collection
 
 router = APIRouter()
-
-
-# Create a new client and connect to the server
-client = MongoClient(MONGODB_URI, server_api=ServerApi('1'))
-
-locations_db = client["Locations"]
-cities_collection = locations_db['Cities']
-countries_collection = locations_db['Countries']
 
 top11_cities = [
     {"city":"Tokyo","country":"Japan"}, 
@@ -28,9 +17,7 @@ top11_cities = [
     ]
 
 @router.get("/cities")
-@limiter.limit(DEFAULT_LIMITER)
 def cities(
-    request: Request,
     city: str = "",
     country: str = "",
     flag: bool = False,
@@ -72,8 +59,8 @@ def cities(
     exact_match_items = []  # To store all items with an exact name match
 
     for result in results:
-        city_name = result.get("name")
-        country_name = result.get("country")
+        city_name: str = result.get("name")
+        country_name: str = result.get("country")
 
         # Get country details from the dictionary
         country_details = country_details_dict.get(country_name, {})
@@ -111,8 +98,7 @@ def cities(
     return items[:limit]
 
 @router.get("/countries")
-@limiter.limit(DEFAULT_LIMITER)
-def countries(request: Request, country: str = "", flag: bool = False, dial_code: bool = False, emoji: bool = False):
+def countries(country: str = "", flag: bool = False, dial_code: bool = False, emoji: bool = False):
     # Example query: find all documents in the collection
     query = {"name": {"$regex": f'^{country}', "$options": 'i'}}
 
