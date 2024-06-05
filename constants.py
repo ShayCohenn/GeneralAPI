@@ -24,6 +24,14 @@ SMS_KEY = os.getenv('SMS_KEY')
 FROM_EMAIL = os.getenv('FROM_EMAIL')
 PASSWORD = os.getenv('PASSWORD')
 
+MODE = os.getenv('MODE')
+
+# -------------------------------------------------------------------------- URLS -------------------------------------------------------------------
+
+LOCAL_URL = "127.0.0.1:8000"
+PRODUCTION_URL = "https://general-api.vercel.app/"
+CURRENT_URL = PRODUCTION_URL if MODE == "production" else LOCAL_URL
+
 # ------------------------------------------------------------------- Messages ----------------------------------------------------------------------
 
 MAIN_ERROR_MESSAGE = {"error":"an error has occured please try again later, if this error persists please contact 'shay91847@gmail.com'"}

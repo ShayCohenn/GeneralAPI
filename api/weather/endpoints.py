@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from constants import MAIN_ERROR_MESSAGE
-from .methods import get_general_weather, get_current_temp
+from .functions import get_general_weather, get_current_temp
 
 router = APIRouter()
 

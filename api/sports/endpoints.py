@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
-from .methods import scrape_soccer_matches
+from .scraping import scrape_soccer_matches
 from constants import MAIN_ERROR_MESSAGE
 
 router = APIRouter()

@@ -2,7 +2,7 @@ import requests
 import datetime
 from constants import WEATHER_API_URL
 
-# ---------------------------------------------------------------- Reuseable methods ----------------------------------------------------------------
+# ---------------------------------------------------------------- Reuseable functions ----------------------------------------------------------------
 
 def convert_temp(value: float, unit: str) -> float:
     if not isinstance(value, (int, float)):
@@ -41,7 +41,7 @@ def convert_to_date(value: int, shift: int):
     dt = datetime.datetime.utcfromtimestamp(timestamp)
     return dt.strftime("%Y-%m-%d %H:%M:%S")
 
-# ---------------------------------------------------------------- Methods for the API ------------------------------------------------------------
+# ---------------------------------------------------------------- Functions for the API ------------------------------------------------------------
 
 def get_general_weather(city: str, lang: str):
     response = requests.get(f"{WEATHER_API_URL}&q={city}&lang={lang}")

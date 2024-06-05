@@ -10,7 +10,7 @@ from api.sports.endpoints import router as sports_router
 from api.geo_endpoints import router as geo_router
 from api.auth.endpoints import router as auth_router
 from api.sms_endpoints import router as sms_router
-from api.email_endpoints import router as email_router
+from api.email.endpoints import router as email_router
 
 # ----------------------------------------------- App Initialization ----------------------------------------------------------------------
 
