@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from constants import MAIN_404_MESSAGE, MAIN_ERROR_MESSAGE, SUMMARY, VERSION, DESCRIPTION
+from constants import MAIN_404_MESSAGE, MAIN_ERROR_MESSAGE, VERSION, DESCRIPTION
 from api.qr_endpoints import router as qr_router
 from api.finance_endpoints import router as stocks_router
 from api.other_endpoints import router as other_router
@@ -14,7 +14,7 @@ from api.email.endpoints import router as email_router
 
 # ----------------------------------------------- App Initialization ----------------------------------------------------------------------
 
-app = FastAPI(title="GeneralAPI",description=DESCRIPTION, version=VERSION, summary=SUMMARY)
+app = FastAPI(title="GeneralAPI",description=DESCRIPTION, version=VERSION)
 
 # ----------------------------------------------- Enable CORS for all origins -------------------------------------------------------------
 app.add_middleware(
@@ -35,12 +35,12 @@ async def custom_500_handler(_, __):
 
 # ----------------------------------------------- Including The Routers -------------------------------------------------------------------
 
+app.include_router(auth_router, prefix="/auth")
+app.include_router(email_router, prefix="/email")
+app.include_router(sms_router, prefix="/sms")
 app.include_router(qr_router, prefix="/qr")
 app.include_router(stocks_router, prefix="/finance")
 app.include_router(geo_router, prefix="/geo")
 app.include_router(weather_router, prefix="/weather")
-app.include_router(auth_router, prefix="/auth")
-app.include_router(email_router, prefix="/email")
-app.include_router(sms_router, prefix="/sms")
 app.include_router(sports_router, prefix="/sports")
 app.include_router(other_router, prefix="/other")

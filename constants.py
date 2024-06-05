@@ -59,12 +59,22 @@ def validate_email(email: str) -> bool:
 VERSION = "0.0.2"
 
 DESCRIPTION = """
-## Email
-send emails
+# Welcome to GeneralAPI's documentation site.
 
-## SMS 
-send sms
+GeneralAPI is an all purpose API built by the FastAPI framework.
+GeneralAPI is very easy to use, just make a request to an endpoint of your choosing and get JSON in response.
+In GeneralAPI you can get anything for your next project,
+from financial data, generating QR codes, weather data, upcoming sports matches, email and sms sending services
+and even random dad jokes, facts and riddles
+
+## Usage:
+All GeneralAPI's services are free to use, but the SMS and Email services require authentication and an API key,
+Just register using the /auth/register endpoint and providing an email, username and a password.
+
+Then all you need to do is to go to your email and click on the URL to verify you email and get your API key.
+
+If you lost your API key just login to your account using your username and password and you'll get your API key
+
+### Disclaimer:
+As of version 0.0.2 you can only have 1 API key per account
 """
-
-SUMMARY = """GeneralAPI is a microservice API that handles every task for your app, from generatign QR codes, to
- gettign financial and weather data and sending emails and sms"""
