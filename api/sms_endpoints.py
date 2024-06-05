@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from vonage import Client, Sms
 from constants import SMS_KEY, SECRET
 from pydantic import BaseModel
-from ..auth.dependency import get_api_key
+from .auth.dependency import get_api_key
 
 router = APIRouter()
 
@@ -15,7 +15,7 @@ def send_sms(phone_num: str, msg: str, from_user: str) -> None:
     client: Client = Client(key=SMS_KEY, secret=SECRET)
     sms: Sms = Sms(client)
 
-    responseData = sms.send_message(
+    response_data = sms.send_message(
         {
             "from": from_user,
             "to": phone_num,
@@ -24,10 +24,10 @@ def send_sms(phone_num: str, msg: str, from_user: str) -> None:
         }
     )
 
-    if responseData["messages"][0]["status"] == "0":
+    if response_data["messages"][0]["status"] == "0":
         print("Message sent successfully.")
     else:
-        print(f"Message failed with error: {responseData['messages'][0]['error-text']}")
+        print(f"Message failed with error: {response_data['messages'][0]['error-text']}")
 
 @router.post("/send")
 async def send_sms_endpoint(sms_request: SmsRequest, user=Depends(get_api_key)):

@@ -1,7 +1,7 @@
 import smtplib
 from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException
-from ..auth.dependency import get_api_key
+from .auth.dependency import get_api_key
 from constants import FROM_EMAIL, PASSWORD, validate_email
 
 router = APIRouter()

@@ -1,5 +1,5 @@
+import bcrypt
 import secrets
-import hashlib
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from constants import users_db, validate_email
@@ -16,7 +16,13 @@ class UserLogin(BaseModel):
     password: str
 
 def get_password_hash(password: str) -> str:
-    return hashlib.sha256(password.encode('utf-8')).hexdigest()
+    # Generate a salt and hash the password
+    salt = bcrypt.gensalt()
+    hashed_password = bcrypt.hashpw(password.encode('utf-8'), salt)
+    return hashed_password.decode('utf-8')
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
 def create_api_key() -> str:
     return secrets.token_hex(32)
@@ -47,7 +53,7 @@ async def register(user: UserCreate):
 async def login(user: UserLogin):
     user_record = users_db.find_one({"username": user.username})
 
-    if not user_record or get_password_hash(user.password) != user_record["password"]:
+    if not user_record or not verify_password(user.password, user_record["password"]):
         raise HTTPException(status_code=401, detail="Invalid username or password")
 
     return {"message": "Login successful", "api_key": user_record["api_key"]}
