@@ -5,14 +5,12 @@ class City:
             country: str, 
             flag: str = None, 
             dial_code: str = None, 
-            emoji: str = None, 
-            country_code: str = None):
+            emoji: str = None):
         self.city = city
         self.country = country
         self.flag = flag if flag is not None else None
         self.dial_code = dial_code if dial_code is not None else None
         self.emoji = emoji if emoji is not None else None
-        self.country_code = country_code if country_code is not None else None
     
     def to_dict(self):
         data = {attr: getattr(self, attr) 

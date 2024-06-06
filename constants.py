@@ -57,6 +57,12 @@ def validate_email(email: str) -> bool:
     email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
     return re.match(email_regex, email) is not None
 
+# ------------------------------------------------------------------- Cache ----------------------------------------------------------------
+from cachetools import cached, LRUCache, TTLCache
+
+cache = LRUCache(maxsize=2048)
+timed_cache = TTLCache(ttl=120, maxsize=2048)
+
 # ------------------------------------------------------------------- Docs ----------------------------------------------------------------
 
 VERSION = "0.0.2"

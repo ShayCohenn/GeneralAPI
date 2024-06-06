@@ -1,6 +1,5 @@
-import asyncio
 from datetime import datetime, timedelta
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from constants import users_db, validate_email, CURRENT_URL

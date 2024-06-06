@@ -1,22 +1,20 @@
 from typing import List
 from .models import City, Country
-from cachetools import cached, LRUCache
-from constants import cities_collection, countries_collection
+from cachetools import cached
+from constants import cities_collection, countries_collection, cache
 
 top11_cities = [
-    {"city":"Tokyo","country":"Japan"}, 
-    {"city":"Delhi","country":"India"}, 
-    {"city":"Shanghai","country":"China"}, 
-    {"city":"São Paulo","country":"Brazil"}, 
-    {"city":"Mexico City","country":"Mexico"}, 
-    {"city":"Mumbai","country":"India"}, 
-    {"city":"Beijing","country":"China"}, 
-    {"city":"Dhaka","country":"Bangladesh"}, 
-    {"city":"Osaka","country":"Japan"}, 
     {"city":"New York City","country":"United States"}, 
+    {"city":"Delhi","country":"India"}, 
+    {"city":"London","country":"United Kingdom"}, 
+    {"city":"São Paulo","country":"Brazil"}, 
+    {"city":"Rome","country":"Italy"}, 
+    {"city":"Paris","country":"France"}, 
+    {"city":"Tokyo","country":"Japan"},
+    {"city":"Beijing","country":"China"}, 
+    {"city":"Tel Aviv","country":"Israel"}, 
+    {"city":"Osaka","country":"Japan"}
     ]
-
-cache = LRUCache(maxsize=2048)
 
 @cached(cache)
 def query_cities(
@@ -25,7 +23,6 @@ def query_cities(
     flag: bool = False,
     dial_code: bool = False,
     emoji: bool = False,
-    country_code: bool = False,
     limit: int = 100) -> List[City]:
 
     query = {}
@@ -72,7 +69,6 @@ def query_cities(
             flag=country_details.get("image") if flag else None,
             dial_code=country_details.get("dial_code") if dial_code else None,
             emoji=country_details.get("emoji") if emoji else None,
-            country_code=country_details.get("code") if country_code else None
         ).to_dict()
 
         if city_name.lower() == city.lower():
