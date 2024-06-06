@@ -7,7 +7,7 @@ from api.finance_endpoints import router as stocks_router
 from api.other_endpoints import router as other_router
 from api.weather.endpoints import router as weather_router
 from api.sports.endpoints import router as sports_router
-from api.geo_endpoints import router as geo_router
+from api.geo.endpoints import router as geo_router
 from api.auth.endpoints import router as auth_router
 from api.sms_endpoints import router as sms_router
 from api.email.endpoints import router as email_router

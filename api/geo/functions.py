@@ -1,7 +1,7 @@
-from fastapi import APIRouter
+from typing import List
+from .models import City, Country
+from cachetools import cached, LRUCache
 from constants import cities_collection, countries_collection
-
-router = APIRouter()
 
 top11_cities = [
     {"city":"Tokyo","country":"Japan"}, 
@@ -16,17 +16,18 @@ top11_cities = [
     {"city":"New York City","country":"United States"}, 
     ]
 
-@router.get("/cities")
-def cities(
+cache = LRUCache(maxsize=2048)
+
+@cached(cache)
+def query_cities(
     city: str = "",
     country: str = "",
     flag: bool = False,
     dial_code: bool = False,
     emoji: bool = False,
     country_code: bool = False,
-    limit: int = 200000
-):
-    # Example query: find all documents in the collection
+    limit: int = 100) -> List[City]:
+
     query = {}
 
     # Add city filter if specified
@@ -65,24 +66,14 @@ def cities(
         # Get country details from the dictionary
         country_details = country_details_dict.get(country_name, {})
 
-        item = {
-            "city": city_name,
-            "country": country_name,
-        }
-        if flag:
-            flag_image = country_details.get("image", None)
-            item["flag"] = flag_image
-
-        if dial_code:
-            code = country_details.get("dial_code", None)
-            item["dial_code"] = code
-
-        if emoji:
-            emj = country_details.get("emoji", None)
-            item["emoji"] = emj
-        if country_code:
-            code = country_details.get("code", None)
-            item["country_code"] = code
+        item = City(
+            city=city_name,
+            country=country_name,
+            flag=country_details.get("image") if flag else None,
+            dial_code=country_details.get("dial_code") if dial_code else None,
+            emoji=country_details.get("emoji") if emoji else None,
+            country_code=country_details.get("code") if country_code else None
+        ).to_dict()
 
         if city_name.lower() == city.lower():
             # If city_name is an exact match, add it to the list
@@ -93,13 +84,10 @@ def cities(
     # Add up to 'limit' exact match items at the beginning of the items array
     items = exact_match_items + items
 
-    if len(items) == 0:
-        return {"error": "Couldn't find what you were looking for..."}
     return items[:limit]
 
-@router.get("/countries")
-def countries(country: str = "", flag: bool = False, dial_code: bool = False, emoji: bool = False):
-    # Example query: find all documents in the collection
+@cached(cache)
+def query_countries(country: str = "", flag: bool = False, dial_code: bool = False, emoji: bool = False) -> List[Country]:
     query = {"name": {"$regex": f'^{country}', "$options": 'i'}}
 
     results = list(countries_collection.find(query).sort([("name", 1)]))
@@ -109,22 +97,13 @@ def countries(country: str = "", flag: bool = False, dial_code: bool = False, em
     for result in results:
         country_name = result.get("name")
 
-        item = {
-            "country": country_name,
-        }
-        if flag:
-            flag_image = result.get("image", None)
-            item["flag"] = flag_image
-        if dial_code:
-            code = result.get("dial_code", None)
-            item["dial_code"] = code
-        if emoji:
-            country_emoji = result.get("emoji", None)
-            item["emoji"] = country_emoji
+        item = Country(
+            country=country_name,
+            flag=result.get("image") if flag else None,
+            dial_code=result.get("dial_code") if dial_code else None,
+            emoji=result.get("emoji") if emoji else None
+        ).to_dict()
 
         items.append(item)
 
-    if len(items) == 0:
-        return {"error": "Couldn't find what you were looking for..."}
     return items
-

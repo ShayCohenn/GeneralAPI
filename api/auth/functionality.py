@@ -33,7 +33,7 @@ async def remove_expired() -> None:
         # Remove expired reset password tokens
         expired_tokens = users_db.find({"reset_token_created_at": {"$lt": datetime.now() - expiration_time}})
         for token in expired_tokens:
-            users_db.update_one({"_id": token["_id"]}, {"$unset": {"reset_token": "", "reset_token_created_at": ""}})
+            users_db.update_one({"_id": token["_id"]}, {"$unset": {"reset_token": "", "reset_token_created_at": "", "new_password":""}})
         # Remove unverified users
         expired_unverified_users = users_db.find({"created_at": {"$lt": datetime.now() - expiration_time}}, {"verified":False})
         for user in expired_unverified_users:

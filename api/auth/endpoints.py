@@ -9,6 +9,11 @@ from ..email.functionality import send_email, create_message
 
 router = APIRouter()
 
+# Add the background task to remove expired tokens and unverified users from DB
+router.add_event_handler("startup", startup_event)
+
+# ---------------------------------------------------------------- Input models ----------------------------------------------------------------
+
 class UserCreate(BaseModel):
     email: str
     username: str
@@ -19,16 +24,17 @@ class UserLogin(BaseModel):
     password: str
 
 class ResetPassword(BaseModel):
-    token: str
-    new_password: str
+    email: str
 
 class ForgotPassword(BaseModel):
     email: str
+    new_password: str
 
-router.add_event_handler("startup", startup_event)
+# ---------------------------------------------------------------- Endpoints ----------------------------------------------------------------
 
-@router.post("/register")
+@router.post("/register", response_class=JSONResponse, response_model=dict)
 async def register(user: UserCreate):
+    """Create a user, create a verification token and send a verification email"""
     if users_db.find_one({"username": user.username}):
         raise HTTPException(status_code=400, detail="Username already registered")
     if users_db.find_one({"email": user.email}):
@@ -101,6 +107,15 @@ async def reset_api_key(user: UserLogin):
 
 @router.post("/forgot-password")
 async def forgot_password(req: ForgotPassword):
+    """
+    Forgot password function
+    Gets the email and the new password from the user
+    Sends an email to the user to confirm the password change.
+
+    If the user didn't confirm the password change in 15 minutes the token date and new password hash will be deleted. 
+
+    Confirmation logic in the /confirm-reset-password endpoint
+    """
     user_record = users_db.find_one({"email": req.email})
     
     if not user_record:
@@ -109,28 +124,35 @@ async def forgot_password(req: ForgotPassword):
     if not user_record["verified"]:
         raise HTTPException(status_code=401, detail="User not verified")
     
+    # Generating the reset token for the confimation of the password reset, a new password hash, and a date for deleting the token and new password after 15 minutes
     reset_token = generate_verification_token()
+    hashed_password = get_password_hash(req.new_password)
     reset_token_created_at = datetime.now()
     
-    users_db.update_one({"_id": user_record["_id"]}, {"$set": {"reset_token": reset_token, "reset_token_created_at": reset_token_created_at}})
+    # Adding the reset token date and new password hash to the user record
+    users_db.update_one({"_id": user_record["_id"]}, {"$set": {"reset_token": reset_token, "reset_token_created_at": reset_token_created_at, "new_password": hashed_password}})
     
     message = create_message(
         from_user='GeneralAPI',
-        msg=f'Please reset your password by clicking on the following link: {CURRENT_URL}/auth/reset-password and using this token = "{reset_token}"',
+        msg=f'Please reset your password by clicking on the following link: {CURRENT_URL}/auth/confirm-reset-password?token={reset_token}&user={str(user_record["_id"])}',
         subject='Reset your password')
     send_email(message=message, to_user=req.email)
     
     return JSONResponse(content={"message": "Password reset email sent"}, status_code=200)
 
-@router.put("/reset-password")
-async def reset_password(data: ResetPassword):
-    user_record = users_db.find_one({"reset_token": data.token})
+@router.get("/confirm-reset-password")
+async def reset_password(token: str, user: str):
+    user_record = users_db.find_one({"reset_token": token})
     
     if not user_record:
         raise HTTPException(status_code=400, detail="Invalid or expired token")
     
-    hashed_password = get_password_hash(data.new_password)
+    if datetime.now() > user_record["reset_token_created_at"] + timedelta(minutes=15):
+        raise HTTPException(status_code=400, detail="Token expired")
     
-    users_db.update_one({"_id": user_record["_id"]}, {"$set": {"password": hashed_password}, "$unset": {"reset_token": ""}})
+    if str(user_record["_id"]) != user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    users_db.update_one({"_id": user_record["_id"]}, {"$set": {"password": user_record["new_password"]}, "$unset": {"reset_token": "", "new_password":"", "reset_token_created_at":""}})
     
     return JSONResponse(content={"message": "Password reset successful"}, status_code=200)

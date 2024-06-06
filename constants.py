@@ -26,6 +26,9 @@ PASSWORD = os.getenv('PASSWORD')
 
 MODE = os.getenv('MODE')
 
+REDIS = os.getenv('REDIS_URI')
+REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
+
 # -------------------------------------------------------------------------- URLS -------------------------------------------------------------------
 
 LOCAL_URL = "127.0.0.1:8000"
