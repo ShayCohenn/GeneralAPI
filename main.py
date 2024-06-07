@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import ORJSONResponse
 from constants import MAIN_404_MESSAGE, MAIN_ERROR_MESSAGE, VERSION, DESCRIPTION
 from api.qr_endpoints import router as qr_router
 from api.finance_endpoints import router as stocks_router
@@ -27,11 +27,11 @@ app.add_middleware(
 
 @app.exception_handler(404)
 async def custom_404_handler(_, __):
-    return JSONResponse(status_code=404, content=MAIN_404_MESSAGE)
+    return ORJSONResponse(status_code=404, content=MAIN_404_MESSAGE)
 
 @app.exception_handler(500)
 async def custom_500_handler(_, __):
-    return JSONResponse(status_code=500, content=MAIN_ERROR_MESSAGE)
+    return ORJSONResponse(status_code=500, content=MAIN_ERROR_MESSAGE)
 
 # ----------------------------------------------- Including The Routers -------------------------------------------------------------------
 

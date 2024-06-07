@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import ORJSONResponse
 from pydantic import BaseModel
 from constants import users_db, validate_email, CURRENT_URL
 from .functionality import get_password_hash, create_api_key, verify_password, generate_verification_token, startup_event
@@ -31,8 +31,8 @@ class ForgotPassword(BaseModel):
 
 # ---------------------------------------------------------------- Endpoints ----------------------------------------------------------------
 
-@router.post("/register", response_class=JSONResponse, response_model=dict)
-async def register(user: UserCreate):
+@router.post("/register")
+async def register(user: UserCreate) -> ORJSONResponse:
     """Create a user, create a verification token and send a verification email"""
     if users_db.find_one({"username": user.username}):
         raise HTTPException(status_code=400, detail="Username already registered")
@@ -60,10 +60,10 @@ async def register(user: UserCreate):
         subject='Verify your email')
     send_email(message=message, to_user=user.email)
 
-    return JSONResponse(content={"message":"User create successfuly, Please verify your email to get your API key"}, status_code=200)
+    return ORJSONResponse(content={"message":"User create successfuly, Please verify your email to get your API key"}, status_code=200)
 
 @router.post("/login")
-async def login(user: UserLogin):
+async def login(user: UserLogin) -> ORJSONResponse:
     """Login to get API key"""
     user_record = users_db.find_one({"username": user.username})
 
@@ -73,10 +73,10 @@ async def login(user: UserLogin):
     if not user_record["verified"]:
         raise HTTPException(status_code=401, detail="User not verified")
 
-    return JSONResponse(status_code=200, content={"message": "Login successful", "api_key": user_record["api_key"]})
+    return ORJSONResponse(status_code=200, content={"message": "Login successful", "api_key": user_record["api_key"]})
 
 @router.get("/verify-email")
-async def verify_email(token: str):
+async def verify_email(token: str) -> ORJSONResponse:
     user_record = users_db.find_one({"verification_token": token})
 
     if not user_record:
@@ -86,10 +86,10 @@ async def verify_email(token: str):
 
     users_db.update_one({"_id": user_record["_id"]}, {"$set": {"verified": True, "api_key":api_key}, "$unset": {"verification_token": ""}})
     
-    return JSONResponse(status_code=200, content={"message":"User verified successfuly", "api-key":api_key})
+    return ORJSONResponse(status_code=200, content={"message":"User verified successfuly", "api-key":api_key})
 
 @router.put("/reset-api-key")
-async def reset_api_key(user: UserLogin):
+async def reset_api_key(user: UserLogin) -> ORJSONResponse:
     user_record = users_db.find_one({"username": user.username})
 
     if not user_record or not verify_password(user.password, user_record["password"]):
@@ -102,10 +102,10 @@ async def reset_api_key(user: UserLogin):
 
     users_db.update_one({"_id": user_record["_id"]}, {"$set": {"api_key":new_api_key}})
 
-    return JSONResponse(status_code=200, content={"message": "API key reset successful", "api_key": new_api_key})
+    return ORJSONResponse(status_code=200, content={"message": "API key reset successful", "api_key": new_api_key})
 
 @router.post("/forgot-password")
-async def forgot_password(req: ForgotPassword):
+async def forgot_password(req: ForgotPassword) -> ORJSONResponse:
     """
     Forgot password function
     Gets the email and the new password from the user
@@ -118,10 +118,10 @@ async def forgot_password(req: ForgotPassword):
     user_record = users_db.find_one({"email": req.email})
     
     if not user_record:
-        raise HTTPException(status_code=404, detail="Email not found")
+        raise HTTPException(status_code=406, detail="Email not found")
     
     if not user_record["verified"]:
-        raise HTTPException(status_code=401, detail="User not verified")
+        raise HTTPException(status_code=406, detail="User not verified")
     
     # Generating the reset token for the confimation of the password reset, a new password hash, and a date for deleting the token and new password after 15 minutes
     reset_token = generate_verification_token()
@@ -137,10 +137,10 @@ async def forgot_password(req: ForgotPassword):
         subject='Reset your password')
     send_email(message=message, to_user=req.email)
     
-    return JSONResponse(content={"message": "Password reset email sent"}, status_code=200)
+    return ORJSONResponse(content={"message": "Password reset email sent"}, status_code=200)
 
 @router.get("/confirm-reset-password")
-async def reset_password(token: str, user: str):
+async def reset_password(token: str, user: str) -> ORJSONResponse:
     user_record = users_db.find_one({"reset_token": token})
     
     if not user_record:
@@ -154,4 +154,4 @@ async def reset_password(token: str, user: str):
 
     users_db.update_one({"_id": user_record["_id"]}, {"$set": {"password": user_record["new_password"]}, "$unset": {"reset_token": "", "new_password":"", "reset_token_created_at":""}})
     
-    return JSONResponse(content={"message": "Password reset successful"}, status_code=200)
+    return ORJSONResponse(content={"message": "Password reset successful"}, status_code=200)

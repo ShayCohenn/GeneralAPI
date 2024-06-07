@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import ORJSONResponse
 from pydantic import BaseModel
 import tempfile
 import segno
@@ -16,7 +16,7 @@ class QrParams(BaseModel):
     border_color: str = "white"
 
 @router.post("/generate")
-def generate_qr_code(qr_params: QrParams):
+def generate_qr_code(qr_params: QrParams) -> ORJSONResponse:
     try:
         # Create a temporary file
         with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as temp_file:
@@ -28,6 +28,6 @@ def generate_qr_code(qr_params: QrParams):
         with open(temp_file.name, "rb") as file:
             img_base64 = base64.b64encode(file.read()).decode()
 
-        return JSONResponse(status_code=200, content={"QR_URL": f"data:image/png;base64,{img_base64}"})
+        return ORJSONResponse(status_code=200, content={"QR_URL": f"data:image/png;base64,{img_base64}"})
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

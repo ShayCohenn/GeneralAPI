@@ -1,5 +1,5 @@
-from fastapi import APIRouter
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import ORJSONResponse
 from constants import MAIN_ERROR_MESSAGE
 from .functions import get_general_weather, get_current_temp
 
@@ -10,23 +10,23 @@ def getGeneralWeather(city: str, lang: str = "en"):
     try:
         response = get_general_weather(city, lang)
         if response == "404":
-            return JSONResponse(content={"error": f"{city} was not found"}, status_code=404)
+            raise HTTPException(detail={"error": f"{city} was not found"}, status_code=202)
         elif not response:
-            return JSONResponse(status_code=500, content=MAIN_ERROR_MESSAGE)
+            raise HTTPException(status_code=500, detail=MAIN_ERROR_MESSAGE)
         else:
-            return response
+            return ORJSONResponse(content=response, status_code=200)
     except:
-        return JSONResponse(status_code=500, content=MAIN_ERROR_MESSAGE)
+        raise HTTPException(status_code=500, detail=MAIN_ERROR_MESSAGE)
 
 @router.get("/current-temperature")
 def getCurrentTemperature(city: str, unit: str = "celsius"):
     try:
         response = get_current_temp(city, unit)
         if response == "404":
-            return JSONResponse(content={"error": f"{city} was not found"}, status_code=404)
+            raise HTTPException(detail={"error": f"{city} was not found"}, status_code=202)
         elif not response:
-            return JSONResponse(status_code=500, content=MAIN_ERROR_MESSAGE)
+            raise HTTPException(status_code=500, detail=MAIN_ERROR_MESSAGE)
         else:
-            return response
+            return ORJSONResponse(content=response, status_code=200)
     except:
-        return JSONResponse(status_code=500, content=MAIN_ERROR_MESSAGE)
+        raise HTTPException(status_code=500, detail=MAIN_ERROR_MESSAGE)
