@@ -2,14 +2,14 @@ from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import ORJSONResponse
 from vonage import Client, Sms
 from constants import SMS_KEY, SECRET
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from .auth.dependency import get_api_key
 
 router = APIRouter()
 
 class SmsRequest(BaseModel):
     from_user: str
-    to: str
+    to: list[str] = Field(..., max_length=5)
     text: str
 
 def send_sms(phone_num: str, msg: str, from_user: str) -> None:
@@ -33,7 +33,8 @@ def send_sms(phone_num: str, msg: str, from_user: str) -> None:
 @router.post("/send")
 async def send_sms_endpoint(sms_request: SmsRequest, user=Depends(get_api_key)):
     try:
-        send_sms(sms_request.to, sms_request.text, sms_request.from_user)
+        for phone_num in sms_request.to:
+            send_sms(phone_num, sms_request.text, sms_request.from_user)
         return ORJSONResponse(content={"message": "SMS sent successfully"}, status_code=200)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to send SMS: {str(e)}")
