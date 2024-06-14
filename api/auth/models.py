@@ -5,7 +5,7 @@ class User(BaseModel):
     username: str
     email: str
     password: str
-    api_key: str | None
+    api_key: Optional[str]
     verified: bool
     verification_token: Optional[str]
     created_at: str
