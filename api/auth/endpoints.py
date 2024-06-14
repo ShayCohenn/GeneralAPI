@@ -1,45 +1,29 @@
-from datetime import datetime, timedelta
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends, Response, status
 from fastapi.responses import ORJSONResponse
-from pydantic import BaseModel
-from constants import users_db, validate_email, CURRENT_URL
-from .functionality import get_password_hash, create_api_key, verify_password, generate_verification_token, startup_event
+from datetime import datetime, timedelta
+from constants import users_db, validate_email, CURRENT_URL, r
 from ..email.functionality import send_email, create_message
+from .models import Register, TokenResponse, UserSignin, ForgotPassword, User
+from .functionality import (get_password_hash, create_api_key, get_user, generate_verification_token, 
+                            startup_event, create_access_token, create_refresh_token, authenticate_user, get_current_active_user, 
+                            ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS, UserSearchField)
 
 router = APIRouter()
 
 # Add the background task to remove expired tokens and unverified users from DB
 router.add_event_handler("startup", startup_event)
 
-# ---------------------------------------------------------------- Input models ----------------------------------------------------------------
-
-class UserCreate(BaseModel):
-    email: str
-    username: str
-    password: str
-
-class UserLogin(BaseModel):
-    username: str
-    password: str
-
-class ResetPassword(BaseModel):
-    email: str
-
-class ForgotPassword(BaseModel):
-    email: str
-    new_password: str
-
 # ---------------------------------------------------------------- Endpoints ----------------------------------------------------------------
 
 @router.post("/register")
-async def register(user: UserCreate) -> ORJSONResponse:
+async def register(user: Register) -> ORJSONResponse:
     """Create a user, create a verification token and send a verification email"""
-    if users_db.find_one({"username": user.username}):
-        raise HTTPException(status_code=400, detail="Username already registered")
-    if users_db.find_one({"email": user.email}):
-        raise HTTPException(status_code=400, detail="Email already registered")
     if not validate_email(user.email):
         raise HTTPException(status_code=400, detail="Invalid email format")
+    if get_user(UserSearchField.USERNAME, user.username):
+        raise HTTPException(status_code=400, detail="Username already registered")
+    if get_user(UserSearchField.EMAIL, user.email):
+        raise HTTPException(status_code=400, detail="Email already registered")
 
     hashed_password = get_password_hash(user.password)
     verification_token = generate_verification_token()
@@ -62,22 +46,41 @@ async def register(user: UserCreate) -> ORJSONResponse:
 
     return ORJSONResponse(content={"message":"User create successfuly, Please verify your email to get your API key"}, status_code=200)
 
-@router.post("/login")
-async def login(user: UserLogin) -> ORJSONResponse:
-    """Login to get API key"""
-    user_record = users_db.find_one({"username": user.username})
+@router.get("/get-api-key")
+async def login(user_record: User = Depends(get_current_active_user)) -> ORJSONResponse:
+    """Get API key""" 
+    return ORJSONResponse(status_code=200, content={"api_key": user_record["api_key"]})
 
-    if not user_record or not verify_password(user.password, user_record["password"]):
-        raise HTTPException(status_code=401, detail="Invalid username or password")
+@router.post("/login", response_model=TokenResponse)
+async def login_for_tokens(user: UserSignin, response: Response) -> TokenResponse:
+    user_record = authenticate_user(user.username, user.password)
+    if not user_record:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    refresh_token_expires = timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    access_token = create_access_token(
+        data={"username": user_record['username']}, expires_delta=access_token_expires
+    )
+    refresh_token = create_refresh_token(
+        data={"username": user_record['username']}, expires_delta=refresh_token_expires
+    )
     
-    if not user_record["verified"]:
-        raise HTTPException(status_code=401, detail="User not verified")
-
-    return ORJSONResponse(status_code=200, content={"message": "Login successful", "api_key": user_record["api_key"]})
+    # Store refresh token in Redis with expiration time
+    r.setex(f"refresh_token:{user_record['username']}", int(refresh_token_expires.total_seconds()), refresh_token)
+    
+    # Set cookies in the response
+    response.set_cookie(key="access_token", value=access_token, httponly=True, max_age=access_token_expires.total_seconds())
+    response.set_cookie(key="refresh_token", value=refresh_token, httponly=True, max_age=refresh_token_expires.total_seconds())
+    
+    return TokenResponse(access_token=access_token, refresh_token=refresh_token, token_type="bearer")
 
 @router.get("/verify-email")
 async def verify_email(token: str) -> ORJSONResponse:
-    user_record = users_db.find_one({"verification_token": token})
+    user_record = get_user(UserSearchField.VERIFICATION_TOKEN, token)
 
     if not user_record:
         raise HTTPException(status_code=400, detail="Invalid or expired token")
@@ -88,20 +91,10 @@ async def verify_email(token: str) -> ORJSONResponse:
     
     return ORJSONResponse(status_code=200, content={"message":"User verified successfuly", "api-key":api_key})
 
-@router.put("/reset-api-key")
-async def reset_api_key(user: UserLogin) -> ORJSONResponse:
-    user_record = users_db.find_one({"username": user.username})
-
-    if not user_record or not verify_password(user.password, user_record["password"]):
-        raise HTTPException(status_code=401, detail="Invalid username or password")
-    
-    if not user_record["verified"]:
-        raise HTTPException(status_code=401, detail="User not verified")
-    
-    new_api_key: str = create_api_key()
-
-    users_db.update_one({"_id": user_record["_id"]}, {"$set": {"api_key":new_api_key}})
-
+@router.get("/reset-api-key")
+async def reset_api_key(user: User = Depends(get_current_active_user)) -> ORJSONResponse:    
+    new_api_key = create_api_key()
+    users_db.update_one({"username": user['username']}, {"$set": {"api_key": new_api_key}})
     return ORJSONResponse(status_code=200, content={"message": "API key reset successful", "api_key": new_api_key})
 
 @router.post("/forgot-password")
@@ -115,7 +108,7 @@ async def forgot_password(req: ForgotPassword) -> ORJSONResponse:
 
     Confirmation logic in the /confirm-reset-password endpoint
     """
-    user_record = users_db.find_one({"email": req.email})
+    user_record = get_user(UserSearchField.EMAIL, req.email)
     
     if not user_record:
         raise HTTPException(status_code=406, detail="Email not found")
@@ -141,7 +134,7 @@ async def forgot_password(req: ForgotPassword) -> ORJSONResponse:
 
 @router.get("/confirm-reset-password")
 async def reset_password(token: str, user: str) -> ORJSONResponse:
-    user_record = users_db.find_one({"reset_token": token})
+    user_record = get_user(UserSearchField.RESET_TOKEN, token)
     
     if not user_record:
         raise HTTPException(status_code=400, detail="Invalid or expired token")

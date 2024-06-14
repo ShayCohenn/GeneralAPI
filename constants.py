@@ -26,8 +26,12 @@ PASSWORD = os.getenv('PASSWORD')
 
 MODE = os.getenv('MODE')
 
-REDIS = os.getenv('REDIS_URI')
+REDIS_URL = os.getenv('REDIS_URL')
+REDIS_PORT = int(os.getenv('REDIS_PORT'))
 REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
+
+SECRET_KEY = os.getenv('SECRET_KEY')
+ALGORITHM = os.getenv('ALGORITHM')
 
 # -------------------------------------------------------------------------- URLS -------------------------------------------------------------------
 
@@ -58,10 +62,18 @@ def validate_email(email: str) -> bool:
     return re.match(email_regex, email) is not None
 
 # ------------------------------------------------------------------- Cache ----------------------------------------------------------------
-from cachetools import cached, LRUCache, TTLCache
+from cachetools import LRUCache, TTLCache
 
 cache = LRUCache(maxsize=2048)
 timed_cache = TTLCache(ttl=120, maxsize=2048)
+
+# ------------------------------------------------------------------- Redis ----------------------------------------------------------------
+import redis
+
+r = redis.Redis(
+  host=REDIS_URL,
+  port=REDIS_PORT,
+  password=REDIS_PASSWORD)
 
 # ------------------------------------------------------------------- Docs ----------------------------------------------------------------
 
