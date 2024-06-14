@@ -12,6 +12,7 @@ class User(BaseModel):
     reset_token: Optional[str]
     reset_token_created_at: Optional[str]
     new_password: Optional[str]
+    active: bool
 
 class TokenData(BaseModel):
     username: Union[str, None] = None
