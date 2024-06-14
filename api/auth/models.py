@@ -14,7 +14,7 @@ class User(BaseModel):
     new_password: Optional[str]
 
 class TokenData(BaseModel):
-    username: str | None = None
+    username: str
 
 class Register(BaseModel):
     email: str
