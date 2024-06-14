@@ -4,7 +4,7 @@ import asyncio
 import secrets
 import hashlib
 from enum import Enum
-from typing import Optional
+from typing import Optional, Union
 from datetime import datetime, timedelta, timezone
 from fastapi import status, HTTPException, Cookie, Depends
 from jwt.exceptions import InvalidTokenError
@@ -69,7 +69,7 @@ def authenticate_user(username: str, password: str) -> Optional[User]:
         return None
     return user_record
 
-def create_access_token(data: dict, expires_delta: timedelta | None = None):
+def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None) -> str:
     to_encode: dict = data.copy()
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
@@ -79,7 +79,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     encoded_jwt: str = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-def create_refresh_token(data: dict, expires_delta: timedelta | None = None):
+def create_refresh_token(data: dict, expires_delta: Union[timedelta, None] = None) -> str:
     if expires_delta is None:
         expires_delta = timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
     return create_access_token(data, expires_delta)

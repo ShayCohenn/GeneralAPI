@@ -1,11 +1,11 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Union
 
 class User(BaseModel):
     username: str
     email: str
     password: str
-    api_key: Optional[str]
+    api_key: Union[str, None]
     verified: bool
     verification_token: Optional[str]
     created_at: str
@@ -14,7 +14,7 @@ class User(BaseModel):
     new_password: Optional[str]
 
 class TokenData(BaseModel):
-    username: str
+    username: Union[str, None] = None
 
 class Register(BaseModel):
     email: str
