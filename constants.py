@@ -18,7 +18,7 @@ FOOTBALL_URL = os.getenv("FOOTBALL_WEBSITE_URL")
 
 MONGODB_URI = os.getenv("MONGODB_URI")
 
-SECRET = os.getenv('SMS_SECRET')
+SMS_SECRET = os.getenv('SMS_SECRET')
 SMS_KEY = os.getenv('SMS_KEY')
 
 FROM_EMAIL = os.getenv('FROM_EMAIL')
