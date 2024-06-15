@@ -1,5 +1,5 @@
-from fastapi.responses import ORJSONResponse
 import requests
+from fastapi.responses import ORJSONResponse
 from fastapi import APIRouter, HTTPException
 from constants import MAIN_ERROR_MESSAGE, DAD_JOKES_API, YO_MOMMA_API, CHUCK_NORRIS_API, FACTS_API, RIDDLES_API
 
