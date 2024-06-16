@@ -1,11 +1,10 @@
-import os
+import io
 import pandas as pd
 import yfinance as yf
 from datetime import datetime
 from typing import Any, Union
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import ORJSONResponse, FileResponse
-from starlette.background import BackgroundTask
+from fastapi.responses import ORJSONResponse, StreamingResponse
 
 router = APIRouter()
 
@@ -114,15 +113,21 @@ async def get_stock_data(ticker: str, start: str, end: str, interval: str = "1d"
     }
     return ORJSONResponse(content=information, status_code=200)
 
-def cleanup(file_path: str):
-    os.remove(file_path)
-
-@router.get("/stock-data-download.csv", response_class=FileResponse)
+@router.get("/stock-data-download.csv")
 async def stock_data_download(ticker: str, start: str, end: str, interval: str = "1d"):
     verify_ticker(ticker)
     data: pd.DataFrame = main_stock_data(ticker, start, end, interval)
-    csv_filename = f'{ticker}_{start}-{end}-{interval}.csv'
-    data.to_csv(csv_filename, index=False)
     
-    task = BackgroundTask(cleanup, file_path=csv_filename)
-    return FileResponse(csv_filename, filename=csv_filename, media_type='text/csv', background=task)
+    csv_buffer = io.StringIO()
+    data.to_csv(csv_buffer, index=False)
+    csv_buffer.seek(0)
+    
+    filename = f'{ticker}_{start}-{end}-{interval}.csv'
+    
+    return StreamingResponse(
+        csv_buffer,
+        media_type='text/csv',
+        headers={
+            'Content-Disposition': f'attachment;filename={filename}'
+        }
+    )
