@@ -1,7 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import ORJSONResponse
-from constants import MAIN_404_MESSAGE, MAIN_ERROR_MESSAGE, VERSION, DESCRIPTION
+from constants import MAIN_404_MESSAGE, MAIN_ERROR_MESSAGE, VERSION, DESCRIPTION, r
 from api.qr_endpoints import router as qr_router
 from api.finance_endpoints import router as stocks_router
 from api.other_endpoints import router as other_router

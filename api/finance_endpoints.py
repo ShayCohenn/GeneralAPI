@@ -1,12 +1,19 @@
 import io
+from enum import Enum
 import pandas as pd
 import yfinance as yf
 from datetime import datetime
 from typing import Any, Union
-from fastapi import APIRouter, HTTPException
-from fastapi.responses import ORJSONResponse, StreamingResponse
+from fastapi import APIRouter, Request, HTTPException, Query, Path
+from fastapi.responses import ORJSONResponse, StreamingResponse, HTMLResponse
+from rate_limiter import rate_limiter
 
 router = APIRouter()
+
+class Format(str, Enum):
+    json = "json"
+    csv = "csv"
+    html = "html"
 
 def verify_ticker(ticker: str) -> Union[yf.Ticker, HTTPException]:
     """Verify if the ticker is valid by checking if it has historical data."""
@@ -16,18 +23,17 @@ def verify_ticker(ticker: str) -> Union[yf.Ticker, HTTPException]:
     raise HTTPException(status_code=400, detail={"error": f"Could not find stock symbol {ticker}"})
 
 
+def str_to_date(date: str) -> datetime:
+    try:
+        date_formatted = datetime.strptime(date, '%d-%m-%Y')
+    except ValueError:
+        raise HTTPException(status_code=400, detail={"error": "Invalid date format"})
+    return date_formatted
+
 def validate_dates(start: str, end: str, interval: str) -> None:
     """Validate the start and end dates and the interval."""
-    try:
-        start_date = datetime.strptime(start, '%d-%m-%Y')
-    except ValueError:
-        raise HTTPException(status_code=400, detail={"error": "Invalid start date format"})
-
-    try:
-        end_date = datetime.now() if end.lower() in ["today", "now"] else datetime.strptime(end, '%d-%m-%Y')
-    except ValueError:
-        raise HTTPException(status_code=400, detail={"error": "Invalid end date format"})
-    
+    start_date = str_to_date(start)
+    end_date = datetime.now() if end is None else str_to_date(end)
     if start_date >= end_date:
         raise HTTPException(status_code=400, detail={"error": "Start date cannot be the same or after end date"})
     if start_date > datetime.now() or end_date > datetime.now():
@@ -36,12 +42,12 @@ def validate_dates(start: str, end: str, interval: str) -> None:
     valid_intervals = {"1m", "2m", "5m", "15m", "30m", "60m", "90m", "1h", "1d", "5d", "1wk", "1mo", "3mo"}
     if interval not in valid_intervals:
         raise HTTPException(status_code=400, detail={"error": f"Invalid interval, please choose one of the following: {', '.join(valid_intervals)}"})
-    
+
 def main_stock_data(ticker: str, start: str, end: str, interval: str) -> pd.DataFrame:
     validate_dates(start, end, interval)
     
     start_date = datetime.strptime(start, '%d-%m-%Y')
-    end_date = datetime.now() if end.lower() in ["today", "now"] else datetime.strptime(end, '%d-%m-%Y')
+    end_date = datetime.now() if end is None else datetime.strptime(end, '%d-%m-%Y')
     
     data: pd.DataFrame = yf.download(ticker, start=start_date, end=end_date, interval=interval)
     if data.empty:
@@ -53,6 +59,7 @@ def main_stock_data(ticker: str, start: str, end: str, interval: str) -> pd.Data
 
 # ---------------------------------------------------------------- Endpoints ----------------------------------------------------------------
 
+@rate_limiter(max_requests_per_second=1, max_requests_per_day=100)
 @router.get("/general-info", response_class=ORJSONResponse)
 def get_general_info(ticker: str) -> ORJSONResponse:
     """Returns general information about a company."""
@@ -60,6 +67,7 @@ def get_general_info(ticker: str) -> ORJSONResponse:
     info = data.info
     return ORJSONResponse(content=info, status_code=200)
 
+@rate_limiter(max_requests_per_second=1, max_requests_per_day=100)
 @router.get("/current-value", response_class=ORJSONResponse)
 def get_value(ticker: str) -> ORJSONResponse:
     """Returns current value of a company's stock."""
@@ -76,6 +84,7 @@ def get_value(ticker: str) -> ORJSONResponse:
     }
     return ORJSONResponse(content=information, status_code=200)
 
+@rate_limiter(max_requests_per_second=1, max_requests_per_day=100)
 @router.get("/currency-convert", response_class=ORJSONResponse)
 def get_exchange_rate(from_curr: str, to_curr: str, amount: float = 1):
     """Currency converter, provide from currency (from_curr) to currency (to_curr) and an amount to convert (default is 1)."""
@@ -94,40 +103,45 @@ def get_exchange_rate(from_curr: str, to_curr: str, amount: float = 1):
         return ORJSONResponse(content=information, status_code=200)
     raise HTTPException(status_code=404, detail={"error": f"Could not find exchange rate for {from_curr}/{to_curr}"})
 
-@router.get("/stock-data", response_class=ORJSONResponse)
-async def get_stock_data(ticker: str, start: str, end: str, interval: str = "1d"):
+@router.get("/stock-data.{format}")
+@rate_limiter(max_requests_per_second=1, max_requests_per_day=20)
+async def get_stock_data(
+    request: Request,
+    format: str = Path(..., description="The format in which to retrieve the stock data"),
+    ticker: str = Query(..., description="The stock ticker symbol"),
+    start: str = Query(..., description="The start date in dd-mm-yyyy format"),
+    end: str = Query(None, description="The end date in dd-mm-yyyy format. Defaults to today if not provided"),
+    interval: str = Query("1d", description="The interval for the stock data")):
     """Fetch stock data for a given ticker and date range."""
     verified_ticker = verify_ticker(ticker)
     data: pd.DataFrame = main_stock_data(ticker, start, end, interval)
-    stock_data = data.to_dict(orient='records')
-    information = {
-        "info": {
-            "ticker": ticker,
-            "company": verified_ticker.info.get("longName", "N/A"),
-            "currency": verified_ticker.info.get("currency", "N/A"),
-            "interval": interval,
-            "start_date": start,
-            "end_date": end
-        },
-        "stock_data": stock_data
-    }
-    return ORJSONResponse(content=information, status_code=200)
-
-@router.get("/stock-data-download.csv")
-async def stock_data_download(ticker: str, start: str, end: str, interval: str = "1d"):
-    verify_ticker(ticker)
-    data: pd.DataFrame = main_stock_data(ticker, start, end, interval)
     
-    csv_buffer = io.StringIO()
-    data.to_csv(csv_buffer, index=False)
-    csv_buffer.seek(0)
-    
-    filename = f'{ticker}_{start}-{end}-{interval}.csv'
-    
-    return StreamingResponse(
-        csv_buffer,
-        media_type='text/csv',
-        headers={
-            'Content-Disposition': f'attachment;filename={filename}'
+    if format == "json":
+        stock_data = data.to_dict(orient='records')
+        information = {
+            "info": {
+                "ticker": ticker,
+                "company": verified_ticker.info.get("longName", "N/A"),
+                "currency": verified_ticker.info.get("currency", "N/A"),
+                "interval": interval,
+                "start_date": start,
+                "end_date": end or datetime.now().strftime('%d-%m-%Y')
+            },
+            "stock_data": stock_data
         }
-    )
+        return ORJSONResponse(content=information, status_code=200)
+    
+    elif format == "csv":
+        csv_buffer = io.StringIO()
+        data.to_csv(csv_buffer, index=False)
+        csv_buffer.seek(0)
+        filename = f'{ticker}_{start}-{end or datetime.now().strftime("%d-%m-%Y")}-{interval}.csv'
+        return StreamingResponse(
+            csv_buffer,
+            media_type='text/csv',
+            headers={'Content-Disposition': f'attachment;filename={filename}'}
+        )
+    
+    elif format == "html":
+        html_content = data.to_html(index=False)
+        return HTMLResponse(content=html_content, status_code=200)
