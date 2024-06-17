@@ -10,7 +10,7 @@ from rate_limiter import rate_limiter
 
 router = APIRouter()
 
-class Format(str, Enum):
+class Format(Enum):
     json = "json"
     csv = "csv"
     html = "html"
@@ -59,17 +59,17 @@ def main_stock_data(ticker: str, start: str, end: str, interval: str) -> pd.Data
 
 # ---------------------------------------------------------------- Endpoints ----------------------------------------------------------------
 
-@rate_limiter(max_requests_per_second=1, max_requests_per_day=100)
 @router.get("/general-info", response_class=ORJSONResponse)
-def get_general_info(ticker: str) -> ORJSONResponse:
+@rate_limiter(max_requests_per_second=1, max_requests_per_day=100)
+async def get_general_info(request: Request, ticker: str) -> ORJSONResponse:
     """Returns general information about a company."""
     data = verify_ticker(ticker)
     info = data.info
     return ORJSONResponse(content=info, status_code=200)
 
-@rate_limiter(max_requests_per_second=1, max_requests_per_day=100)
 @router.get("/current-value", response_class=ORJSONResponse)
-def get_value(ticker: str) -> ORJSONResponse:
+@rate_limiter(max_requests_per_second=1, max_requests_per_day=100)
+async def get_value(request: Request, ticker: str) -> ORJSONResponse:
     """Returns current value of a company's stock."""
     data = verify_ticker(ticker)
     current_price = data.history(period="1d")['Close'].iloc[-1]
@@ -84,24 +84,24 @@ def get_value(ticker: str) -> ORJSONResponse:
     }
     return ORJSONResponse(content=information, status_code=200)
 
-@rate_limiter(max_requests_per_second=1, max_requests_per_day=100)
 @router.get("/currency-convert", response_class=ORJSONResponse)
-def get_exchange_rate(from_curr: str, to_curr: str, amount: float = 1):
+@rate_limiter(max_requests_per_second=1, max_requests_per_day=100)
+async def get_exchange_rate(request: Request, from_curr: str, to_curr: str, amount: float = 1):
     """Currency converter, provide from currency (from_curr) to currency (to_curr) and an amount to convert (default is 1)."""
-    data = yf.Ticker(f'{from_curr}{to_curr}=X')
-    if not data.history(period="1d").empty:
-        result = data.history(period="1d")["Close"].iloc[-1] * amount
-        information = {
-            "result": result,
-            "info": {
-                "from_curr": from_curr.upper(),
-                "to_curr": to_curr.upper(),
-                "amount": amount,
-                "date": datetime.now().strftime("%Y-%m-%d")
-            }
+    data = yf.Ticker(f'{from_curr.upper()}{to_curr.upper()}=X')
+    if data.history(period="1d").empty:
+        raise HTTPException(status_code=404, detail={"error": f"Could not find exchange rate for {from_curr}/{to_curr}"})
+    result = data.history(period="1d")["Close"].iloc[-1] * amount
+    information = {
+        "result": result,
+        "info": {
+            "from_curr": from_curr.upper(),
+            "to_curr": to_curr.upper(),
+            "amount": amount,
+            "date": datetime.now().strftime("%Y-%m-%d")
         }
-        return ORJSONResponse(content=information, status_code=200)
-    raise HTTPException(status_code=404, detail={"error": f"Could not find exchange rate for {from_curr}/{to_curr}"})
+    }
+    return ORJSONResponse(content=information, status_code=200)
 
 @router.get("/stock-data.{format}")
 @rate_limiter(max_requests_per_second=1, max_requests_per_day=20)
