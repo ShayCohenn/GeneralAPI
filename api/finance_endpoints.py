@@ -16,6 +16,15 @@ class Format(Enum):
     html = "html"
     excel = "excel"
 
+class ValidColumns(Enum):
+    DATE = 'Date'
+    HIGH = 'High'
+    LOW = 'Low'
+    OPEN = 'Open'
+    CLOSE = 'Close'
+    DIVIDENDS = 'Dividends'
+    VOLUME = 'Volume'
+    STOCK_SPLITS = 'Stock Splits'
 
 class Interval(Enum):
     ONE_MINUTE = "1m"
@@ -60,7 +69,7 @@ def validate_dates(start: str, end: str) -> None:
         raise HTTPException(status_code=400, detail={"error": "Cannot get stock data from the future"})
 
 def validate_column(columns: Union[str, None]) -> list[str]:
-    valid_columns = ['Date', 'High', 'Low', 'Open', 'Close', 'Adj Close', 'Volume']
+    valid_columns = [col.value for col in ValidColumns]
     if columns is None:
         return valid_columns
     selected_columns = []
@@ -76,13 +85,13 @@ def validate_column(columns: Union[str, None]) -> list[str]:
     selected_columns.insert(0,'Date')
     return selected_columns
 
-def main_stock_data(ticker: str, start: str, end: str, interval: Interval) -> pd.DataFrame:
+def main_stock_data(ticker: yf.Ticker, start: str, end: str, interval: Interval) -> pd.DataFrame:
     validate_dates(start, end)
     
     start_date = str_to_date(start)
     end_date = str_to_date(end)
     
-    data: pd.DataFrame = yf.download(ticker, start=start_date, end=end_date, interval=interval.value)
+    data: pd.DataFrame = ticker.history(start=start_date, end=end_date, interval=interval.value)
     if data.empty:
         raise HTTPException(status_code=404, detail={"error": "No data found for the given period"})
     
@@ -148,7 +157,7 @@ async def get_stock_data(
     columns: str = Query(None, description="Comma-separated list of columns to export, at least 1 column is required")):
     """Fetch stock data for a given ticker and date range."""
     verified_ticker: yf.Ticker = verify_ticker(ticker)
-    data: pd.DataFrame = main_stock_data(ticker, start, end, interval)
+    data: pd.DataFrame = main_stock_data(verified_ticker, start, end, interval)
 
     selected_columns: list[str] = validate_column(columns)
     data = data[selected_columns]
