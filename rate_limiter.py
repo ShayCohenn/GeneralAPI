@@ -1,11 +1,15 @@
 from functools import wraps
 from fastapi import Request, HTTPException
 from constants import r
+from constants import MODE
 
 def rate_limiter(max_requests_per_second: int, max_requests_per_day: int = None):
     def decorator(func):
         @wraps(func)
         async def wrapper(*args, **kwargs):
+            if MODE == "development":
+                return await func(*args, **kwargs)
+            
             request: Request = kwargs['request']
             if request is None:
                 raise HTTPException(

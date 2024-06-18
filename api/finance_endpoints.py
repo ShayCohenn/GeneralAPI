@@ -14,6 +14,7 @@ class Format(Enum):
     json = "json"
     csv = "csv"
     html = "html"
+    excel = "excel"
 
 def verify_ticker(ticker: str) -> Union[yf.Ticker, HTTPException]:
     """Verify if the ticker is valid by checking if it has historical data."""
@@ -23,9 +24,12 @@ def verify_ticker(ticker: str) -> Union[yf.Ticker, HTTPException]:
     raise HTTPException(status_code=400, detail={"error": f"Could not find stock symbol {ticker}"})
 
 
-def str_to_date(date: str) -> datetime:
+def str_to_date(date: Union[str, None]) -> datetime:
     try:
-        date_formatted = datetime.strptime(date, '%d-%m-%Y')
+        if date is None:
+            date_formatted = datetime.strptime(datetime.now().strftime("%d-%m-%Y"),"%d-%m-%Y")
+        else:
+            date_formatted = datetime.strptime(date, '%d-%m-%Y')
     except ValueError:
         raise HTTPException(status_code=400, detail={"error": "Invalid date format"})
     return date_formatted
@@ -33,7 +37,7 @@ def str_to_date(date: str) -> datetime:
 def validate_dates(start: str, end: str, interval: str) -> None:
     """Validate the start and end dates and the interval."""
     start_date = str_to_date(start)
-    end_date = datetime.now() if end is None else str_to_date(end)
+    end_date = str_to_date(end)
     if start_date >= end_date:
         raise HTTPException(status_code=400, detail={"error": "Start date cannot be the same or after end date"})
     if start_date > datetime.now() or end_date > datetime.now():
@@ -46,8 +50,8 @@ def validate_dates(start: str, end: str, interval: str) -> None:
 def main_stock_data(ticker: str, start: str, end: str, interval: str) -> pd.DataFrame:
     validate_dates(start, end, interval)
     
-    start_date = datetime.strptime(start, '%d-%m-%Y')
-    end_date = datetime.now() if end is None else datetime.strptime(end, '%d-%m-%Y')
+    start_date = str_to_date(start)
+    end_date = str_to_date(end)
     
     data: pd.DataFrame = yf.download(ticker, start=start_date, end=end_date, interval=interval)
     if data.empty:
@@ -60,7 +64,7 @@ def main_stock_data(ticker: str, start: str, end: str, interval: str) -> pd.Data
 # ---------------------------------------------------------------- Endpoints ----------------------------------------------------------------
 
 @router.get("/general-info", response_class=ORJSONResponse)
-@rate_limiter(max_requests_per_second=1, max_requests_per_day=100)
+@rate_limiter(max_requests_per_second=1, max_requests_per_day=200)
 async def get_general_info(request: Request, ticker: str) -> ORJSONResponse:
     """Returns general information about a company."""
     data = verify_ticker(ticker)
@@ -68,7 +72,7 @@ async def get_general_info(request: Request, ticker: str) -> ORJSONResponse:
     return ORJSONResponse(content=info, status_code=200)
 
 @router.get("/current-value", response_class=ORJSONResponse)
-@rate_limiter(max_requests_per_second=1, max_requests_per_day=100)
+@rate_limiter(max_requests_per_second=1, max_requests_per_day=200)
 async def get_value(request: Request, ticker: str) -> ORJSONResponse:
     """Returns current value of a company's stock."""
     data = verify_ticker(ticker)
@@ -79,13 +83,13 @@ async def get_value(request: Request, ticker: str) -> ORJSONResponse:
             "ticker": ticker,
             "company": data.info.get("longName", "N/A"),
             "currency": data.info.get("currency", "N/A"),
-            "date": datetime.now().strftime("%Y-%m-%d, %H:%M:%S")
+            "date": datetime.now().strftime("%d-%m-%Y, %H:%M:%S")
         }
     }
     return ORJSONResponse(content=information, status_code=200)
 
 @router.get("/currency-convert", response_class=ORJSONResponse)
-@rate_limiter(max_requests_per_second=1, max_requests_per_day=100)
+@rate_limiter(max_requests_per_second=1, max_requests_per_day=200)
 async def get_exchange_rate(request: Request, from_curr: str, to_curr: str, amount: float = 1):
     """Currency converter, provide from currency (from_curr) to currency (to_curr) and an amount to convert (default is 1)."""
     data = yf.Ticker(f'{from_curr.upper()}{to_curr.upper()}=X')
@@ -98,23 +102,25 @@ async def get_exchange_rate(request: Request, from_curr: str, to_curr: str, amou
             "from_curr": from_curr.upper(),
             "to_curr": to_curr.upper(),
             "amount": amount,
-            "date": datetime.now().strftime("%Y-%m-%d")
+            "date": datetime.now().strftime("%d-%m-%Y, %H:%M:%S")
         }
     }
     return ORJSONResponse(content=information, status_code=200)
 
 @router.get("/stock-data.{format}")
-@rate_limiter(max_requests_per_second=1, max_requests_per_day=20)
+@rate_limiter(max_requests_per_second=1, max_requests_per_day=100)
 async def get_stock_data(
     request: Request,
-    format: str = Path(..., description="The format in which to retrieve the stock data"),
+    format: Format = Path(..., description="The format in which to retrieve the stock data"),
     ticker: str = Query(..., description="The stock ticker symbol"),
     start: str = Query(..., description="The start date in dd-mm-yyyy format"),
-    end: str = Query(None, description="The end date in dd-mm-yyyy format. Defaults to today if not provided"),
+    end: str = Query(None, description="The end date in dd-mm-yyyy format. Defaults to today if not provided", title="test"),
     interval: str = Query("1d", description="The interval for the stock data")):
     """Fetch stock data for a given ticker and date range."""
     verified_ticker = verify_ticker(ticker)
     data: pd.DataFrame = main_stock_data(ticker, start, end, interval)
+
+    format = format.value
     
     if format == "json":
         stock_data = data.to_dict(orient='records')
@@ -125,11 +131,23 @@ async def get_stock_data(
                 "currency": verified_ticker.info.get("currency", "N/A"),
                 "interval": interval,
                 "start_date": start,
-                "end_date": end or datetime.now().strftime('%d-%m-%Y')
+                "end_date": str_to_date(end).strftime("%d-%m-%Y")
             },
             "stock_data": stock_data
         }
         return ORJSONResponse(content=information, status_code=200)
+    
+    elif format == "excel":
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            data.to_excel(writer, index=False, sheet_name='Sheet1')
+        output.seek(0)
+        filename = f'{ticker}_{start}-{end or datetime.now().strftime("%d-%m-%Y")}-{interval}.xlsx'
+        return StreamingResponse(
+            output,
+            media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            headers={'Content-Disposition': f'attachment; filename={filename}'}
+        )
     
     elif format == "csv":
         csv_buffer = io.StringIO()

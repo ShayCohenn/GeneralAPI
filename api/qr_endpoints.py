@@ -2,8 +2,9 @@ import segno
 import base64
 import tempfile
 from pydantic import BaseModel
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import ORJSONResponse
+from rate_limiter import rate_limiter
 
 router = APIRouter()
 
@@ -16,7 +17,8 @@ class QrParams(BaseModel):
     border_color: str = "white"
 
 @router.post("/generate")
-def generate_qr_code(qr_params: QrParams) -> ORJSONResponse:
+@rate_limiter(max_requests_per_second=1, max_requests_per_day=2)
+async def generate_qr_code(request: Request, qr_params: QrParams) -> ORJSONResponse:
     try:
         # Create a temporary file
         with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as temp_file:
