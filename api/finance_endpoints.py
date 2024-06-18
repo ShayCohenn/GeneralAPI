@@ -16,7 +16,23 @@ class Format(Enum):
     html = "html"
     excel = "excel"
 
-def verify_ticker(ticker: str) -> Union[yf.Ticker, HTTPException]:
+
+class Interval(Enum):
+    ONE_MINUTE = "1m"
+    TWO_MINUTES = "2m"
+    FIVE_MINUTES = "5m"
+    FIFTEEN_MINUTES = "15m"
+    THIRTY_MINUTES = "30m"
+    SIXTY_MINUTES = "60m"
+    NINETY_MINUTES = "90m"
+    ONE_HOUR = "1h"
+    ONE_DAY = "1d"
+    FIVE_DAYS = "5d"
+    ONE_WEEK = "1wk"
+    ONE_MONTH = "1mo"
+    THREE_MONTHS = "3mo"
+
+def verify_ticker(ticker: str) -> yf.Ticker:
     """Verify if the ticker is valid by checking if it has historical data."""
     data = yf.Ticker(ticker)
     if not data.history(period="1d").empty:
@@ -34,7 +50,7 @@ def str_to_date(date: Union[str, None]) -> datetime:
         raise HTTPException(status_code=400, detail={"error": "Invalid date format"})
     return date_formatted
 
-def validate_dates(start: str, end: str, interval: str) -> None:
+def validate_dates(start: str, end: str) -> None:
     """Validate the start and end dates and the interval."""
     start_date = str_to_date(start)
     end_date = str_to_date(end)
@@ -42,18 +58,31 @@ def validate_dates(start: str, end: str, interval: str) -> None:
         raise HTTPException(status_code=400, detail={"error": "Start date cannot be the same or after end date"})
     if start_date > datetime.now() or end_date > datetime.now():
         raise HTTPException(status_code=400, detail={"error": "Cannot get stock data from the future"})
-    
-    valid_intervals = {"1m", "2m", "5m", "15m", "30m", "60m", "90m", "1h", "1d", "5d", "1wk", "1mo", "3mo"}
-    if interval not in valid_intervals:
-        raise HTTPException(status_code=400, detail={"error": f"Invalid interval, please choose one of the following: {', '.join(valid_intervals)}"})
 
-def main_stock_data(ticker: str, start: str, end: str, interval: str) -> pd.DataFrame:
-    validate_dates(start, end, interval)
+def validate_column(columns: Union[str, None]) -> list[str]:
+    valid_columns = ['Date', 'High', 'Low', 'Open', 'Close', 'Adj Close', 'Volume']
+    if columns is None:
+        return valid_columns
+    selected_columns = []
+    columns_list = columns.split(',')
+
+    for col in columns_list:
+        col_capitalized = col.strip().title()
+        if col_capitalized in valid_columns:
+            selected_columns.append(col_capitalized)
+        else:
+            raise HTTPException(status_code=400, detail=f"Invalid column '{col}' requested.")
+
+    selected_columns.insert(0,'Date')
+    return selected_columns
+
+def main_stock_data(ticker: str, start: str, end: str, interval: Interval) -> pd.DataFrame:
+    validate_dates(start, end)
     
     start_date = str_to_date(start)
     end_date = str_to_date(end)
     
-    data: pd.DataFrame = yf.download(ticker, start=start_date, end=end_date, interval=interval)
+    data: pd.DataFrame = yf.download(ticker, start=start_date, end=end_date, interval=interval.value)
     if data.empty:
         raise HTTPException(status_code=404, detail={"error": "No data found for the given period"})
     
@@ -114,11 +143,15 @@ async def get_stock_data(
     format: Format = Path(..., description="The format in which to retrieve the stock data"),
     ticker: str = Query(..., description="The stock ticker symbol"),
     start: str = Query(..., description="The start date in dd-mm-yyyy format"),
-    end: str = Query(None, description="The end date in dd-mm-yyyy format. Defaults to today if not provided", title="test"),
-    interval: str = Query("1d", description="The interval for the stock data")):
+    end: str = Query(None, description="The end date in dd-mm-yyyy format. Defaults to today if not provided"),
+    interval: Interval = Query(Interval.ONE_DAY, description="The interval for the stock data"),
+    columns: str = Query(None, description="Comma-separated list of columns to export, at least 1 column is required")):
     """Fetch stock data for a given ticker and date range."""
-    verified_ticker = verify_ticker(ticker)
+    verified_ticker: yf.Ticker = verify_ticker(ticker)
     data: pd.DataFrame = main_stock_data(ticker, start, end, interval)
+
+    selected_columns: list[str] = validate_column(columns)
+    data = data[selected_columns]
 
     format = format.value
     
@@ -131,7 +164,7 @@ async def get_stock_data(
                 "currency": verified_ticker.info.get("currency", "N/A"),
                 "interval": interval,
                 "start_date": start,
-                "end_date": str_to_date(end).strftime("%d-%m-%Y")
+                "end_date": end or datetime.now().strftime("%d-%m-%Y")
             },
             "stock_data": stock_data
         }
