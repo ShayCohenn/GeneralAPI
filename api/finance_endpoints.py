@@ -3,7 +3,7 @@ from enum import Enum
 import pandas as pd
 import yfinance as yf
 from datetime import datetime
-from typing import Any, Union
+from typing import Any, Union, List
 from fastapi import APIRouter, Request, HTTPException, Query, Path
 from fastapi.responses import ORJSONResponse, StreamingResponse, HTMLResponse
 from rate_limiter import rate_limiter
@@ -17,14 +17,14 @@ class Format(Enum):
     excel = "excel"
 
 class ValidColumns(Enum):
-    DATE = 'Date'
-    HIGH = 'High'
-    LOW = 'Low'
-    OPEN = 'Open'
-    CLOSE = 'Close'
-    DIVIDENDS = 'Dividends'
-    VOLUME = 'Volume'
-    STOCK_SPLITS = 'Stock Splits'
+    DATE = 'date'
+    HIGH = 'high'
+    LOW = 'low'
+    OPEN = 'open'
+    CLOSE = 'close'
+    DIVIDENDS = 'dividends'
+    VOLUME = 'volume'
+    STOCK_SPLITS = 'stock splits'
 
 class Interval(Enum):
     ONE_MINUTE = "1m"
@@ -68,21 +68,22 @@ def validate_dates(start: str, end: str) -> None:
     if start_date > datetime.now() or end_date > datetime.now():
         raise HTTPException(status_code=400, detail={"error": "Cannot get stock data from the future"})
 
-def validate_column(columns: Union[str, None]) -> list[str]:
-    valid_columns = [col.value for col in ValidColumns]
+def validate_column(columns: Union[str, None]) -> List[str]:
+    valid_columns = [col.value.title() for col in ValidColumns]
     if columns is None:
         return valid_columns
-    selected_columns = []
+    
     columns_list = columns.split(',')
-
+    selected_columns = []
+    
     for col in columns_list:
-        col_capitalized = col.strip().title()
-        if col_capitalized in valid_columns:
-            selected_columns.append(col_capitalized)
+        col_name = col.title()
+        if col_name in valid_columns:
+            selected_columns.append(col_name)
         else:
             raise HTTPException(status_code=400, detail=f"Invalid column '{col}' requested.")
-
-    selected_columns.insert(0,'Date')
+    
+    selected_columns.insert(0, 'Date')
     return selected_columns
 
 def main_stock_data(ticker: yf.Ticker, start: str, end: str, interval: Interval) -> pd.DataFrame:
