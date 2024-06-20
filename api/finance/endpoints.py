@@ -1,14 +1,13 @@
-import io
+from typing import Any
+from datetime import datetime
 import pandas as pd
 import yfinance as yf
-from datetime import datetime
-from typing import Any
 from fastapi import APIRouter, Request, HTTPException, Query, Path
 from fastapi.responses import ORJSONResponse
+from rate_limiter import rate_limiter
 from .functions import (verify_ticker, validate_column, main_stock_data, calculate_period_change,
                         stock_data_format_json, stock_data_format_excel, stock_data_format_csv, stock_data_format_html,
                         Format, Interval, ValidColumns)
-from rate_limiter import rate_limiter
 
 router = APIRouter()
 
