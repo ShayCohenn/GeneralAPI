@@ -81,12 +81,11 @@ async def get_stock_data(
 
     format = format.value
     
-    match format:
-        case Format.json.value:
-            return stock_data_format_json(data=data, ticker=verified_ticker, interval=interval.value, start=start, end=end)
-        case Format.excel.value:
-            return stock_data_format_excel(data=data, ticker=ticker, interval=interval.value, start=start, end=end)
-        case Format.csv.value:
-            return stock_data_format_csv(data=data, ticker=ticker, interval=interval.value, start=start, end=end)
-        case Format.html.value:
-            return stock_data_format_html(data=data)
+    if format == Format.json.value:
+        return stock_data_format_json(data=data, ticker=verified_ticker, interval=interval.value, start=start, end=end)
+    elif format == Format.excel.value:
+        return stock_data_format_excel(data=data, ticker=ticker, interval=interval.value, start=start, end=end)
+    elif format == Format.csv.value:
+        return stock_data_format_csv(data=data, ticker=ticker, interval=interval.value, start=start, end=end)
+    elif format == Format.html.value:
+        return stock_data_format_html(data=data)
