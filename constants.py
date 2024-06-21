@@ -41,7 +41,7 @@ GOOGLE_SECRET = os.getenv('GOOGLE_CLIENT_SECRET')
 LOCAL_URL = "127.0.0.1:8000"
 PRODUCTION_URL = "https://general-api.vercel.app/"
 CURRENT_URL = PRODUCTION_URL if MODE == "production" else LOCAL_URL
-FRONTEND_URL = "127.0.0.1:3000"
+FRONTEND_URL = "http://127.0.0.1:3000"
 GOOGLE_REDIRECT_URI = f"{FRONTEND_URL}/auth/google"
 
 # ------------------------------------------------------------------- Messages ----------------------------------------------------------------------
