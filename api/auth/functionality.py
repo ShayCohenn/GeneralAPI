@@ -6,10 +6,10 @@ import hashlib
 from enum import Enum
 from typing import Optional, Union
 from datetime import datetime, timedelta, timezone
-from fastapi import status, HTTPException, Cookie, Depends
+from fastapi import status, HTTPException, Cookie, Depends, Response
 from jwt.exceptions import InvalidTokenError
 from .models import TokenData, User
-from constants import users_db, SECRET_KEY, ALGORITHM
+from constants import users_db, SECRET_KEY, ALGORITHM, r
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 REFRESH_TOKEN_EXPIRE_DAYS = 30
@@ -65,10 +65,14 @@ def get_user(search_field: UserSearchField, query: str) -> Optional[User]:
     return user_record
 
 
-def authenticate_user(username: str, password: str) -> Optional[User]:
+def authenticate_user(username: str, password: str) -> User:
     user_record: User = users_db.find_one({"username": username})
-    if not user_record or not verify_password(password, user_record['password']):
-        return None
+    if not user_record or not user_record['password'] or not verify_password(password, user_record['password']):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     return user_record
 
 
@@ -118,6 +122,29 @@ async def get_current_active_user(current_user: User = Depends(get_current_user)
     if not current_user['verified'] or not current_user['active']:
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
+
+def set_cookies(username: str, response: Response) -> dict[str, str]:
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    refresh_token_expires = timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    
+    access_token = create_access_token(
+        data={"username": username}, expires_delta=access_token_expires
+    )
+    refresh_token = create_refresh_token(
+        data={"username": username}, expires_delta=refresh_token_expires
+    )
+    
+    # Store refresh token in Redis with expiration time
+    r.setex(f"refresh_token:{username}", int(refresh_token_expires.total_seconds()), refresh_token)
+    
+    # Set cookies in the response
+    response.set_cookie(
+        key="access_token", value=access_token, httponly=True, max_age=access_token_expires.total_seconds(), path="/"
+    )
+    response.set_cookie(
+        key="refresh_token", value=refresh_token, httponly=True, max_age=refresh_token_expires.total_seconds(), path="/"
+    )
+    return {"access_token": access_token, "refresh_token": refresh_token}
 
 async def startup_event() -> None:
     asyncio.create_task(remove_expired())

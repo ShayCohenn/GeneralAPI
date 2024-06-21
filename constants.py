@@ -33,12 +33,16 @@ REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
 SECRET_KEY = os.getenv('SECRET_KEY')
 ALGORITHM = os.getenv('ALGORITHM')
 
+GOOGLE_ID = os.getenv('GOOGLE_CLIENT_ID')
+GOOGLE_SECRET = os.getenv('GOOGLE_CLIENT_SECRET')
+
 # -------------------------------------------------------------------------- URLS -------------------------------------------------------------------
 
 LOCAL_URL = "127.0.0.1:8000"
 PRODUCTION_URL = "https://general-api.vercel.app/"
 CURRENT_URL = PRODUCTION_URL if MODE == "production" else LOCAL_URL
 FRONTEND_URL = "127.0.0.1:3000"
+GOOGLE_REDIRECT_URI = f"{FRONTEND_URL}/auth/google"
 
 # ------------------------------------------------------------------- Messages ----------------------------------------------------------------------
 
