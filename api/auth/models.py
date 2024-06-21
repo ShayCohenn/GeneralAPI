@@ -26,11 +26,12 @@ class UserLogin(BaseModel):
     username: str
     password: str
 
-class ResetPassword(BaseModel):
+class Email(BaseModel):
     email: str
 
-class ForgotPassword(BaseModel):
-    email: str
+class ConfirmResetPassword(BaseModel):
+    token: str
+    user: str
     new_password: str
 
 class UserSignin(BaseModel):

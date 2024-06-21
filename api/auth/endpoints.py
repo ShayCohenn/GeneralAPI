@@ -1,13 +1,13 @@
+import jwt
 from fastapi import APIRouter, HTTPException, Depends, Response, status, Cookie
 from fastapi.responses import ORJSONResponse
 from datetime import datetime, timedelta
-from constants import users_db, validate_email, CURRENT_URL, r, ALGORITHM, SECRET_KEY
+from constants import users_db, validate_email, CURRENT_URL, r, ALGORITHM, SECRET_KEY, FRONTEND_URL
 from ..email.functionality import send_email, create_message
-from .models import Register, TokenResponse, UserSignin, ForgotPassword, User
+from .models import Register, TokenResponse, UserSignin, Email, User, ConfirmResetPassword
 from .functionality import (get_password_hash, create_api_key, get_user, generate_verification_token, 
                             startup_event, create_access_token, create_refresh_token, authenticate_user, get_current_active_user, 
                             ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS, UserSearchField)
-import jwt
 
 router = APIRouter()
 
@@ -43,7 +43,7 @@ async def register(user: Register) -> ORJSONResponse:
     users_db.insert_one(user_data)
     message = create_message(
         from_user='GeneralAPI', 
-        msg=f"Please verify your email by clicking on the following link: {CURRENT_URL}/auth/verify-email?token={verification_token}",
+        msg=f"Please verify your email by clicking on the following link: {FRONTEND_URL}/auth/verify-email/{verification_token}",
         subject='Verify your email')
     send_email(message=message, to_user=user.email)
 
@@ -142,16 +142,7 @@ async def reset_api_key(user: User = Depends(get_current_active_user)) -> ORJSON
 # ----------------------------------- Password Reset ------------------------------------------
 
 @router.post("/forgot-password")
-async def forgot_password(req: ForgotPassword) -> ORJSONResponse:
-    """
-    Forgot password function
-    Gets the email and the new password from the user
-    Sends an email to the user to confirm the password change.
-
-    If the user didn't confirm the password change in 15 minutes the token date and new password hash will be deleted. 
-
-    Confirmation logic in the /confirm-reset-password endpoint
-    """
+async def forgot_password(req: Email) -> ORJSONResponse:
     user_record: User = get_user(UserSearchField.EMAIL, req.email)
     
     if not user_record or not user_record["verified"] or not user_record["active"]:
@@ -159,33 +150,29 @@ async def forgot_password(req: ForgotPassword) -> ORJSONResponse:
       
     # Generating the reset token for the confimation of the password reset, a new password hash, and a date for deleting the token and new password after 15 minutes
     reset_token = generate_verification_token()
-    hashed_password = get_password_hash(req.new_password)
     reset_token_created_at = datetime.now()
     
     # Adding the reset token date and new password hash to the user record
-    users_db.update_one({"_id": user_record["_id"]}, {"$set": {"reset_token": reset_token, "reset_token_created_at": reset_token_created_at, "new_password": hashed_password}})
+    users_db.update_one({"_id": user_record["_id"]}, {"$set": {"reset_token": reset_token, "reset_token_created_at": reset_token_created_at}})
     
     message = create_message(
         from_user='GeneralAPI',
-        msg=f'Please reset your password by clicking on the following link: {CURRENT_URL}/auth/confirm-reset-password?token={reset_token}&user={str(user_record["_id"])}',
+        msg=f'Please reset your password by clicking on the following link: {FRONTEND_URL}/reset-password/{reset_token}/{str(user_record["_id"])}',
         subject='Reset your password')
     send_email(message=message, to_user=req.email)
     
     return ORJSONResponse(content={"message": "Password reset email sent"}, status_code=200)
 
-@router.get("/confirm-reset-password")
-async def reset_password(token: str, user: str) -> ORJSONResponse:
-    user_record = get_user(UserSearchField.RESET_TOKEN, token)
+
+@router.post("/confirm-reset-password")
+async def reset_password(creds: ConfirmResetPassword) -> ORJSONResponse:
+    user_record = get_user(UserSearchField.RESET_TOKEN, creds.token)
     
-    if not user_record:
+    if not user_record or datetime.now() > user_record["reset_token_created_at"] + timedelta(minutes=15) or str(user_record["_id"]) != creds.user:
         raise HTTPException(status_code=400, detail="Invalid or expired token")
     
-    if datetime.now() > user_record["reset_token_created_at"] + timedelta(minutes=15):
-        raise HTTPException(status_code=400, detail="Token expired")
-    
-    if str(user_record["_id"]) != user:
-        raise HTTPException(status_code=401, detail="Unauthorized")
+    new_password_hash: str = get_password_hash(creds.new_password)
 
-    users_db.update_one({"_id": user_record["_id"]}, {"$set": {"password": user_record["new_password"]}, "$unset": {"reset_token": "", "new_password":"", "reset_token_created_at":""}})
+    users_db.update_one({"_id": user_record["_id"]}, {"$set": {"password": new_password_hash}, "$unset": {"reset_token": "", "reset_token_created_at":""}})
     
     return ORJSONResponse(content={"message": "Password reset successful"}, status_code=200)

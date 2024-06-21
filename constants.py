@@ -38,6 +38,7 @@ ALGORITHM = os.getenv('ALGORITHM')
 LOCAL_URL = "127.0.0.1:8000"
 PRODUCTION_URL = "https://general-api.vercel.app/"
 CURRENT_URL = PRODUCTION_URL if MODE == "production" else LOCAL_URL
+FRONTEND_URL = "127.0.0.1:3000"
 
 # ------------------------------------------------------------------- Messages ----------------------------------------------------------------------
 

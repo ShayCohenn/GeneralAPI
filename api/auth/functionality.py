@@ -24,7 +24,7 @@ class UserSearchField(Enum):
 
 def get_password_hash(password: str) -> str:
     salt = hashlib.sha256(SECRET_KEY.encode('utf-8')).digest()
-    key = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 100000)
+    key = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 1000)
     return key.hex()
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -41,7 +41,7 @@ def create_api_key() -> str:
 def generate_verification_token() -> str:
     """Generate a unique verification token"""
     while True:
-        verification_token = secrets.token_urlsafe(32)
+        verification_token = secrets.token_urlsafe(64)
         if not users_db.find_one({"verification_token": verification_token}):
             return verification_token
 
@@ -52,22 +52,25 @@ async def remove_expired() -> None:
         # Remove expired reset password tokens
         expired_tokens = users_db.find({"reset_token_created_at": {"$lt": datetime.now() - expiration_time}})
         for token in expired_tokens:
-            users_db.update_one({"_id": token["_id"]}, {"$unset": {"reset_token": "", "reset_token_created_at": "", "new_password":""}})
+            users_db.update_one({"_id": token["_id"]}, {"$unset": {"reset_token": "", "reset_token_created_at": ""}})
         # Remove unverified users
         expired_unverified_users = users_db.find({"created_at": {"$lt": datetime.now() - expiration_time}}, {"verified":False})
         for user in expired_unverified_users:
             users_db.delete_one({"_id": user["_id"], "verified": False})
         await asyncio.sleep(60)
 
+
 def get_user(search_field: UserSearchField, query: str) -> Optional[User]:
     user_record: User = users_db.find_one({search_field.value: query})
     return user_record
+
 
 def authenticate_user(username: str, password: str) -> Optional[User]:
     user_record: User = users_db.find_one({"username": username})
     if not user_record or not verify_password(password, user_record['password']):
         return None
     return user_record
+
 
 def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None) -> str:
     to_encode: dict = data.copy()
@@ -78,6 +81,7 @@ def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None
     to_encode.update({"exp": expire})
     encoded_jwt: str = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
 
 def create_refresh_token(data: dict, expires_delta: Union[timedelta, None] = None) -> str:
     if expires_delta is None:
