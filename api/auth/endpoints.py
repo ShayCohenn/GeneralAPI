@@ -20,31 +20,32 @@ router.add_event_handler("startup", startup_event)
 
 # ---------------------------------------------------------------- Endpoints ----------------------------------------------------------------
 
-@router.get("/google/login")
+@router.get("/google/login", response_class=ORJSONResponse)
 async def login_google():
-    return {
-        "url": f"https://accounts.google.com/o/oauth2/auth?response_type=code&client_id={GOOGLE_ID}&redirect_uri={GOOGLE_REDIRECT_URI}&scope=openid%20profile%20email&access_type=offline"
-    }
+    return ORJSONResponse(
+        content={"url": f"https://accounts.google.com/o/oauth2/auth?response_type=code&client_id={GOOGLE_ID}&redirect_uri={GOOGLE_REDIRECT_URI}&scope=openid%20profile%20email&access_type=offline"},
+        status_code=200
+        )
 
-@router.get("/auth/google")
+@router.get("/auth/google", response_model=TokenResponse)
 async def auth_google(code: str, response: Response):
-    token_url = "https://accounts.google.com/o/oauth2/token"
-    data = {
+    token_url: str = "https://accounts.google.com/o/oauth2/token"
+    data: dict = {
         "code": code,
         "client_id": GOOGLE_ID,
         "client_secret": GOOGLE_SECRET,
         "redirect_uri": GOOGLE_REDIRECT_URI,
         "grant_type": "authorization_code",
     }
-    google_response = requests.post(token_url, data=data)
-    access_token = google_response.json().get("access_token")
-    user_info = requests.get("https://www.googleapis.com/oauth2/v1/userinfo", headers={"Authorization": f"Bearer {access_token}"})
+    google_response: dict = requests.post(token_url, data=data).json()
+    access_token: str = google_response.get("access_token")
+    user_info: requests.Response = requests.get("https://www.googleapis.com/oauth2/v1/userinfo", headers={"Authorization": f"Bearer {access_token}"})
 
     user_info_json: dict = user_info.json()
     email: str = user_info_json.get("email")
-    username = user_info_json.get("name", email.split("@")[0])
+    username: str = user_info_json.get("name", email.split("@")[0])
     
-    user_record = get_user(UserSearchField.EMAIL, email)
+    user_record: User = get_user(UserSearchField.EMAIL, email)
     
     # If user doesn't exist, create a new user record
     if not user_record:
@@ -60,7 +61,7 @@ async def auth_google(code: str, response: Response):
         users_db.insert_one(user_data)
         user_record = get_user(UserSearchField.EMAIL, email)
 
-    tokens = set_cookies(username=user_record['username'], response=response)
+    tokens: dict = set_cookies(username=user_record['username'], response=response)
     
     return TokenResponse(access_token=tokens['access_token'], refresh_token=tokens['refresh_token'])
 
@@ -75,10 +76,10 @@ async def register(user: Register) -> ORJSONResponse:
     if get_user(UserSearchField.EMAIL, user.email):
         raise HTTPException(status_code=400, detail="Email already registered")
 
-    hashed_password = get_password_hash(user.password)
-    verification_token = generate_verification_token()
+    hashed_password: str = get_password_hash(user.password)
+    verification_token: str = generate_verification_token()
 
-    user_data = {
+    user_data: dict = {
         "username": user.username,
         "email": user.email,
         "password": hashed_password,
@@ -98,7 +99,7 @@ async def register(user: Register) -> ORJSONResponse:
     return ORJSONResponse(content={"message":"User create successfuly, Please check your email"}, status_code=200)
 
 @router.post("/login", response_model=TokenResponse)
-async def login_for_tokens(user: UserSignin, response: Response) -> TokenResponse:
+async def login_for_tokens(user: UserSignin, response: Response):
     user_record = authenticate_user(user.username, user.password)
     tokens = set_cookies(username=user_record['username'], response=response)
     
@@ -112,8 +113,8 @@ async def logout(response: Response ,current_user: User = Depends(get_current_us
     response.delete_cookie(key='refresh_token', path='/')
     
 # ----------------------------------- Refresh Access Token --------------------------------
-@router.get('/refresh')
-async def refresh(response: Response, refresh_token: str = Cookie(None)) -> TokenResponse:
+@router.get('/refresh', response_model=TokenResponse)
+async def refresh(response: Response, refresh_token: str = Cookie(None)):
     token_exception = HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid refresh token",
@@ -134,7 +135,7 @@ async def refresh(response: Response, refresh_token: str = Cookie(None)) -> Toke
 
     response.set_cookie("access_token", access_token, httponly=True, max_age=access_token_expires.total_seconds(), path="/")
 
-    return TokenResponse(access_token=access_token, refresh_token=refresh_token, token_type="bearer")
+    return TokenResponse(access_token=access_token, refresh_token=refresh_token)
 
 # ------------------------------------ Verify Email ----------------------------------------------
 
