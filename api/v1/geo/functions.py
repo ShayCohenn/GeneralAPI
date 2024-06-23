@@ -1,19 +1,19 @@
-from typing import List
-from .models import City, Country
+from fastapi import HTTPException
 from cachetools import cached
-from core.utils import cache
+from core.utils import cache, validate_input
 from core.db import cities_collection, countries_collection
+from .models import City, Country
 
 top11_cities = [
     {"city":"New York City","country":"United States"}, 
-    {"city":"Delhi","country":"India"}, 
+    {"city":"Rome","country":"Italy"}, 
+    {"city":"Tel Aviv","country":"Israel"},
     {"city":"London","country":"United Kingdom"}, 
     {"city":"São Paulo","country":"Brazil"}, 
-    {"city":"Rome","country":"Italy"}, 
+    {"city":"Lod","country":"Israel"}, 
     {"city":"Paris","country":"France"}, 
     {"city":"Tokyo","country":"Japan"},
     {"city":"Beijing","country":"China"}, 
-    {"city":"Tel Aviv","country":"Israel"}, 
     {"city":"Osaka","country":"Japan"}
     ]
 
@@ -24,7 +24,12 @@ def query_cities(
     flag: bool = False,
     dial_code: bool = False,
     emoji: bool = False,
-    limit: int = 100) -> List[City]:
+    limit: int = 100) -> list[City]:
+
+    if city and not validate_input(city):
+        raise HTTPException(detail={"error":"Invalid city name"}, status_code=400)
+    if country and not validate_input(country):
+        raise HTTPException(detail={"error":"Invalid country name"}, status_code=400)
 
     query = {}
 
@@ -49,7 +54,7 @@ def query_cities(
 
     # Fetch country details for all unique country names in a single query
     country_details_query = {"name": {"$in": list(country_names)}}
-    country_details_cursor = countries_collection.find(country_details_query)
+    country_details_cursor: list[dict] = countries_collection.find(country_details_query)
 
     # Create a dictionary for efficient lookup of country details based on country names
     country_details_dict = {country.get("name"): country for country in country_details_cursor}
@@ -84,11 +89,13 @@ def query_cities(
     return items[:limit]
 
 @cached(cache)
-def query_countries(country: str = "", flag: bool = False, dial_code: bool = False, emoji: bool = False) -> List[Country]:
+def query_countries(country: str = "", flag: bool = False, dial_code: bool = False, emoji: bool = False) -> list[Country]:
+    if country and not validate_input(country):
+        raise HTTPException(detail={"error":"Invalid country name"}, status_code=400)
+    
     query = {"name": {"$regex": f'^{country}', "$options": 'i'}}
 
-    results = list(countries_collection.find(query).sort([("name", 1)]))
-    results.sort(key=lambda x: len(x["name"]))
+    results: list[dict] = list(countries_collection.find(query).sort("name", 1))
 
     items = []
     for result in results:

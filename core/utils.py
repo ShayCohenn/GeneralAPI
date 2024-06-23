@@ -15,6 +15,9 @@ def validate_email(email: str) -> bool:
     email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
     return re.match(email_regex, email) is not None
 
+def validate_input(input_str: str) -> bool:
+    return bool(re.match(r'^[a-zA-Z0-9\s]*$', input_str))
+
 
 async def get_api_key(x_api_key: str = Header(...)):
     user = users_db.find_one({"api_key": x_api_key})
