@@ -1,7 +1,8 @@
 from typing import List
 from .models import City, Country
 from cachetools import cached
-from constants import cities_collection, countries_collection, cache
+from core.utils import cache
+from core.db import cities_collection, countries_collection
 
 top11_cities = [
     {"city":"New York City","country":"United States"}, 
@@ -38,13 +39,13 @@ def query_cities(
     if not query:  # If no filters are specified, return the top results
         top_cities_query = {"$or": [{"name": city_data["city"], "country": city_data["country"]} for city_data in top11_cities]}
         top_cities_results = list(cities_collection.find(top_cities_query).sort([("name", 1)]))
-        results = top_cities_results
+        results: list[dict] = top_cities_results
     else:
         # Sort by population in descending order and then by name
-        results = list(cities_collection.find(query).sort([("population", -1), ("name", 1)]))
+        results: list[dict] = list(cities_collection.find(query).sort([("population", -1), ("name", 1)]))
 
     # Collect unique country names
-    country_names = set(result.get("country") for result in results if result.get("country"))
+    country_names: set[dict] = set(result.get("country") for result in results if result.get("country"))
 
     # Fetch country details for all unique country names in a single query
     country_details_query = {"name": {"$in": list(country_names)}}

@@ -9,7 +9,8 @@ from datetime import datetime, timedelta, timezone
 from fastapi import status, HTTPException, Cookie, Depends, Response
 from jwt.exceptions import InvalidTokenError
 from .models import TokenData, User
-from constants import users_db, SECRET_KEY, ALGORITHM, r
+from core.db import users_db, redis_client
+from core.config import SecurityConfig
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 REFRESH_TOKEN_EXPIRE_DAYS = 30
@@ -23,7 +24,7 @@ class UserSearchField(Enum):
 
 
 def get_password_hash(password: str) -> str:
-    salt = hashlib.sha256(SECRET_KEY.encode('utf-8')).digest()
+    salt = hashlib.sha256(SecurityConfig.SECRET_KEY.encode('utf-8')).digest()
     key = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 1000)
     return key.hex()
 
@@ -34,7 +35,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def create_api_key() -> str:
     """Generate a unique API key"""
     while True:
-        api_key = secrets.token_hex(32)
+        api_key = secrets.token_hex(64)
         if not users_db.find_one({"api_key": api_key}):
             return api_key
 
@@ -83,7 +84,7 @@ def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None
     else:
         expire = datetime.now(timezone.utc) + timedelta(minutes=15)
     to_encode.update({"exp": expire})
-    encoded_jwt: str = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt: str = jwt.encode(to_encode, SecurityConfig.SECRET_KEY, algorithm=SecurityConfig.ALGORITHM)
     return encoded_jwt
 
 
@@ -103,7 +104,7 @@ async def get_current_user(access_token: Optional[str] = Cookie(None)) -> User:
         if access_token is None:
             raise credentials_exception
         
-        payload: dict = jwt.decode(access_token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload: dict = jwt.decode(access_token, SecurityConfig.SECRET_KEY, algorithms=[SecurityConfig.ALGORITHM])
         username: str = payload["username"]
         if username is None:
             raise credentials_exception
@@ -135,7 +136,7 @@ def set_cookies(username: str, response: Response) -> dict[str, str]:
     )
     
     # Store refresh token in Redis with expiration time
-    r.setex(f"refresh_token:{username}", int(refresh_token_expires.total_seconds()), refresh_token)
+    redis_client.setex(f"refresh_token:{username}", int(refresh_token_expires.total_seconds()), refresh_token)
     
     # Set cookies in the response
     response.set_cookie(

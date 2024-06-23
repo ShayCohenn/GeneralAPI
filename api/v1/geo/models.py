@@ -1,11 +1,5 @@
 class City:
-    def __init__(
-            self, 
-            city: str,
-            country: str, 
-            flag: str = None, 
-            dial_code: str = None, 
-            emoji: str = None):
+    def __init__(self, city: str, country: str, flag: str = None, dial_code: str = None, emoji: str = None):
         self.city = city
         self.country = country
         self.flag = flag if flag is not None else None
@@ -21,12 +15,7 @@ class City:
         return data
     
 class Country:
-    def __init__(
-            self, 
-            country: str, 
-            flag: str = None, 
-            dial_code: str = None, 
-            emoji: str = None):
+    def __init__(self, country: str, flag: str = None, dial_code: str = None, emoji: str = None):
         self.country = country
         self.flag = flag if flag is not None else None
         self.dial_code = dial_code if dial_code is not None else None

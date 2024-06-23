@@ -1,11 +1,12 @@
 from datetime import datetime, timedelta
 import jwt
 import requests
+from fastapi import APIRouter, HTTPException, Depends, Response, status, Cookie
 from fastapi.responses import ORJSONResponse
 from fastapi.security import OAuth2PasswordBearer
-from fastapi import APIRouter, HTTPException, Depends, Response, status, Cookie
-from constants import users_db, validate_email, r, ALGORITHM, SECRET_KEY, FRONTEND_URL, GOOGLE_ID, GOOGLE_SECRET, GOOGLE_REDIRECT_URI
-from ..email.functionality import send_email, create_message
+from core.config import GoogleConfig, SecurityConfig, URLS
+from core.db import users_db, redis_client
+from core.utils import validate_email, create_email_message, send_email
 from .models import Register, TokenResponse, UserSignin, Email, User, ConfirmResetPassword
 from .functionality import (get_password_hash, create_api_key, get_user, generate_verification_token, set_cookies,
                             startup_event, create_access_token, authenticate_user, get_current_active_user, get_current_user, 
@@ -23,7 +24,7 @@ router.add_event_handler("startup", startup_event)
 @router.get("/google/login", response_class=ORJSONResponse)
 async def login_google():
     return ORJSONResponse(
-        content={"url": f"https://accounts.google.com/o/oauth2/auth?response_type=code&client_id={GOOGLE_ID}&redirect_uri={GOOGLE_REDIRECT_URI}&scope=openid%20profile%20email&access_type=offline"},
+        content={"url": f"https://accounts.google.com/o/oauth2/auth?response_type=code&client_id={GoogleConfig.GOOGLE_ID}&redirect_uri={URLS.GOOGLE_REDIRECT_URI}&scope=openid%20profile%20email&access_type=offline"},
         status_code=200
         )
 
@@ -32,9 +33,9 @@ async def auth_google(code: str, response: Response):
     token_url: str = "https://accounts.google.com/o/oauth2/token"
     data: dict = {
         "code": code,
-        "client_id": GOOGLE_ID,
-        "client_secret": GOOGLE_SECRET,
-        "redirect_uri": GOOGLE_REDIRECT_URI,
+        "client_id": GoogleConfig.GOOGLE_ID,
+        "client_secret": GoogleConfig.GOOGLE_SECRET,
+        "redirect_uri": URLS.GOOGLE_REDIRECT_URI,
         "grant_type": "authorization_code",
     }
     google_response: dict = requests.post(token_url, data=data).json()
@@ -66,8 +67,8 @@ async def auth_google(code: str, response: Response):
     return TokenResponse(access_token=tokens['access_token'], refresh_token=tokens['refresh_token'])
 
 # ---------------------------------- Register, Login, Logout -------------------------------------
-@router.post("/register")
-async def register(user: Register) -> ORJSONResponse:
+@router.post("/register", response_class=ORJSONResponse)
+async def register(user: Register):
     """Create a user, create a verification token and send a verification email"""
     if not validate_email(user.email):
         raise HTTPException(status_code=400, detail="Invalid email format")
@@ -90,9 +91,9 @@ async def register(user: Register) -> ORJSONResponse:
         "active": True
     }
     users_db.insert_one(user_data)
-    message = create_message(
+    message = create_email_message(
         from_user='GeneralAPI', 
-        msg=f"Please verify your email by clicking on the following link: {FRONTEND_URL}/auth/verify-email/{verification_token}",
+        msg=f"Please verify your email by clicking on the following link: {URLS.FRONTEND_URL}/auth/verify-email/{verification_token}",
         subject='Verify your email')
     send_email(message=message, to_user=user.email)
 
@@ -107,7 +108,7 @@ async def login_for_tokens(user: UserSignin, response: Response):
 
 @router.post("/logout", status_code=204)
 async def logout(response: Response ,current_user: User = Depends(get_current_user)):
-    r.delete(f"refresh_token:{current_user['username']}")
+    redis_client.delete(f"refresh_token:{current_user['username']}")
 
     response.delete_cookie(key='access_token', path='/')
     response.delete_cookie(key='refresh_token', path='/')
@@ -122,12 +123,12 @@ async def refresh(response: Response, refresh_token: str = Cookie(None)):
     if not refresh_token:
         raise token_exception
     
-    payload: dict = jwt.decode(refresh_token, SECRET_KEY, algorithms=ALGORITHM)
+    payload: dict = jwt.decode(refresh_token, SecurityConfig.SECRET_KEY, algorithms=SecurityConfig.ALGORITHM)
     username: str = payload["username"]
     if username == None:
         raise token_exception
     
-    if not r.exists(f"refresh_token:{username}"):
+    if not redis_client.exists(f"refresh_token:{username}"):
         raise token_exception
 
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -139,8 +140,8 @@ async def refresh(response: Response, refresh_token: str = Cookie(None)):
 
 # ------------------------------------ Verify Email ----------------------------------------------
 
-@router.get("/verify-email")
-async def verify_email(token: str) -> ORJSONResponse:
+@router.get("/verify-email", response_class=ORJSONResponse)
+async def verify_email(token: str):
     user_record = get_user(UserSearchField.VERIFICATION_TOKEN, token)
 
     if not user_record:
@@ -154,8 +155,8 @@ async def verify_email(token: str) -> ORJSONResponse:
 
 # ------------------------------------ Get and Reset API keys ------------------------------------
 
-@router.get("/get-api-key")
-async def login(user_record: User = Depends(get_current_active_user)) -> ORJSONResponse:
+@router.get("/get-api-key", response_class=ORJSONResponse)
+async def login(user_record: User = Depends(get_current_active_user)):
     """Get API key""" 
     if user_record["api_key"] is None:
         new_api_key = create_api_key()
@@ -171,8 +172,8 @@ async def reset_api_key(user: User = Depends(get_current_active_user)) -> ORJSON
 
 # ----------------------------------- Password Reset ------------------------------------------
 
-@router.post("/forgot-password")
-async def forgot_password(req: Email) -> ORJSONResponse:
+@router.post("/forgot-password", response_class=ORJSONResponse)
+async def forgot_password(req: Email):
     user_record: User = get_user(UserSearchField.EMAIL, req.email)
     
     if not user_record or not user_record["verified"] or not user_record["active"] or not user_record["password"]:
@@ -185,17 +186,17 @@ async def forgot_password(req: Email) -> ORJSONResponse:
     # Adding the reset token date and new password hash to the user record
     users_db.update_one({"_id": user_record["_id"]}, {"$set": {"reset_token": reset_token, "reset_token_created_at": reset_token_created_at}})
     
-    message = create_message(
+    message = create_email_message(
         from_user='GeneralAPI',
-        msg=f'Please reset your password by clicking on the following link: {FRONTEND_URL}/reset-password/{reset_token}/{str(user_record["_id"])}',
+        msg=f'Please reset your password by clicking on the following link: {URLS.FRONTEND_URL}/reset-password/{reset_token}/{str(user_record["_id"])}',
         subject='Reset your password')
     send_email(message=message, to_user=req.email)
     
     return ORJSONResponse(content={"message": "Password reset email sent"}, status_code=200)
 
 
-@router.post("/confirm-reset-password")
-async def reset_password(creds: ConfirmResetPassword) -> ORJSONResponse:
+@router.post("/confirm-reset-password", response_class=ORJSONResponse)
+async def reset_password(creds: ConfirmResetPassword):
     user_record = get_user(UserSearchField.RESET_TOKEN, creds.token)
     
     if not user_record or datetime.now() > user_record["reset_token_created_at"] + timedelta(minutes=15) or str(user_record["_id"]) != creds.user:

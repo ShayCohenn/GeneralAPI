@@ -4,7 +4,7 @@ import tempfile
 from pydantic import BaseModel
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import ORJSONResponse
-from rate_limiter import rate_limiter
+from core.rate_limiter import rate_limiter
 
 router = APIRouter()
 

@@ -6,6 +6,7 @@ import pandas as pd
 import yfinance as yf
 from fastapi import HTTPException
 from fastapi.responses import ORJSONResponse, StreamingResponse, HTMLResponse
+from core.utils import str_to_date, get_current_date
 
 # ---------------------------------------------------------------- Enums ----------------------------------------------------------------
 
@@ -48,21 +49,6 @@ def verify_ticker(ticker: str) -> yf.Ticker:
     if not data.history(period="1d").empty:
         return data
     raise HTTPException(status_code=400, detail={"error": f"Could not find stock symbol {ticker}"})
-
-
-def get_current_date() -> str:
-    return datetime.now().strftime("%d-%m-%Y")
-
-
-def str_to_date(date: Union[str, None]) -> datetime:
-    try:
-        if date is None:
-            date_formatted = datetime.strptime(get_current_date(),'%d-%m-%Y')
-        else:
-            date_formatted = datetime.strptime(date, '%d-%m-%Y')
-    except ValueError:
-        raise HTTPException(status_code=400, detail={"error": "Invalid date format"})
-    return date_formatted
 
 # -------------------------- /stock-data enpoint functions --------------------------------
 

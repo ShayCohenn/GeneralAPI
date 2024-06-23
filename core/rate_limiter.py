@@ -1,13 +1,13 @@
 from functools import wraps
 from fastapi import Request, HTTPException
-from constants import r
-from constants import MODE
+from core.db import redis_client
+from core.config import AppConfig
 
 def rate_limiter(max_requests_per_second: int, max_requests_per_day: int = None):
     def decorator(func):
         @wraps(func)
         async def wrapper(*args, **kwargs):
-            if MODE == "development":
+            if AppConfig.MODE == "development":
                 return await func(*args, **kwargs)
             
             request: Request = kwargs['request']
@@ -21,7 +21,7 @@ def rate_limiter(max_requests_per_second: int, max_requests_per_day: int = None)
 
             # Rate limit per second
             redis_key_sec = f"rate_limit:{client_ip}:per_second:{func.__name__}"
-            sec_res = r.get(redis_key_sec)
+            sec_res = redis_client.get(redis_key_sec)
             if sec_res and int(sec_res.decode("utf-8")) >= max_requests_per_second:
                 raise HTTPException(
                     detail={"error": "Too many requests per second"},
@@ -31,7 +31,7 @@ def rate_limiter(max_requests_per_second: int, max_requests_per_day: int = None)
             # Rate limit per day
             if max_requests_per_day is not None:
                 redis_key_day = f"rate_limit:{client_ip}:per_day:{func.__name__}"
-                day_res = r.get(redis_key_day)
+                day_res = redis_client.get(redis_key_day)
                 if day_res and int(day_res.decode("utf-8")) >= max_requests_per_day:
                     raise HTTPException(
                         detail={"error": "Too many requests per day"},
@@ -40,13 +40,13 @@ def rate_limiter(max_requests_per_second: int, max_requests_per_day: int = None)
                 
             try:
                 # Increment the request count for per second rate limit
-                r.incr(redis_key_sec)
-                r.expire(redis_key_sec, 1)  # Expire in 1 second
+                redis_client.incr(redis_key_sec)
+                redis_client.expire(redis_key_sec, 1)  # Expire in 1 second
 
                 # Increment the request count for per day rate limit
                 if max_requests_per_day is not None:
-                    r.incr(redis_key_day)
-                    r.expire(redis_key_day, 86400)  # Expire in 1 day (86400 seconds)
+                    redis_client.incr(redis_key_day)
+                    redis_client.expire(redis_key_day, 86400)  # Expire in 1 day (86400 seconds)
 
                 # Call the original function with the provided arguments
                 return await func(*args, **kwargs)

@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 import requests
 from fastapi import HTTPException
-from constants import WEATHER_API_URL
+from core.config import WeatherConfig
 from typing import Optional
 
 # ---------------------------------------------------------------- Reuseable functions ----------------------------------------------------------------
@@ -42,7 +42,7 @@ def convert_to_date(value: int, shift: int) -> str:
     return dt.strftime("%Y-%m-%d %H:%M:%S")
 
 def get_weather_data(city: str, lang: Optional[str] = "en") -> requests.Response:
-    response: requests.Response = requests.get(url=WEATHER_API_URL, params={"q": city, "lang": lang})
+    response: requests.Response = requests.get(url=WeatherConfig.WEATHER_API_URL, params={"q": city, "lang": lang})
     if response.status_code == 404:
         raise HTTPException(detail={"error": f"{city} was not found"}, status_code=404)
     if response.status_code == 200:
@@ -93,7 +93,7 @@ def get_general_weather(city: str, lang: str) -> dict:
     return weather
 
 def get_current_temp(city: str, unit: str) -> dict[str, float]:
-    response = requests.get(f"{WEATHER_API_URL}&q={city}")
+    response = requests.get(f"{WeatherConfig.WEATHER_API_URL}&q={city}")
     if response.status_code == 404:
         raise HTTPException(detail={"error": f"{city} was not found"}, status_code=404)
     if response.status_code == 200:

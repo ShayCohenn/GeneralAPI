@@ -1,10 +1,9 @@
-from typing import Any
 from datetime import datetime
 import pandas as pd
 import yfinance as yf
 from fastapi import APIRouter, Request, HTTPException, Query, Path
 from fastapi.responses import ORJSONResponse
-from rate_limiter import rate_limiter
+from core.rate_limiter import rate_limiter
 from .functions import (verify_ticker, validate_column, main_stock_data, calculate_period_change,
                         stock_data_format_json, stock_data_format_excel, stock_data_format_csv, stock_data_format_html,
                         Format, Interval, ValidColumns)
@@ -25,7 +24,7 @@ async def get_value(request: Request, ticker: str) -> ORJSONResponse:
     """Returns current value of a company's stock."""
     data = verify_ticker(ticker)
     current_price = data.history(period="1d")['Close'].iloc[-1]
-    information: dict[str, Any] = {
+    information: dict = {
         "current_value": current_price,
         "info": {
             "ticker": ticker,

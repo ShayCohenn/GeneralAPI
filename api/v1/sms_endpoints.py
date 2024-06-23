@@ -2,9 +2,9 @@ from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import ORJSONResponse
 from pydantic import BaseModel, Field
 from vonage import Client, Sms
-from constants import SMS_KEY, SMS_SECRET
-from .auth.dependency import get_api_key
-from rate_limiter import rate_limiter
+from core.config import SMSConfig
+from core.utils import get_api_key
+from core.rate_limiter import rate_limiter
 
 router = APIRouter()
 
@@ -14,7 +14,7 @@ class SmsRequest(BaseModel):
     text: str
 
 def send_sms(phone_num: str, msg: str, from_user: str) -> None:
-    client: Client = Client(key=SMS_KEY, secret=SMS_SECRET)
+    client: Client = Client(key=SMSConfig.SMS_KEY, secret=SMSConfig.SMS_SECRET)
     sms: Sms = Sms(client)
 
     response_data = sms.send_message(
