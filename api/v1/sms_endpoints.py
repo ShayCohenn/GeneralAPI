@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.responses import ORJSONResponse
 from pydantic import BaseModel, Field
 from vonage import Client, Sms
@@ -33,7 +33,7 @@ def send_sms(phone_num: str, msg: str, from_user: str) -> None:
 
 @router.post("/send")
 @rate_limiter(max_requests_per_second=1, max_requests_per_day=10)
-async def send_sms_endpoint(sms_request: SmsRequest, user=Depends(get_api_key)):
+async def send_sms_endpoint(request: Request, sms_request: SmsRequest, user=Depends(get_api_key)):
     try:
         for phone_num in sms_request.to:
             send_sms(phone_num, sms_request.text, sms_request.from_user)
