@@ -32,7 +32,7 @@ def send_sms(phone_num: str, msg: str, from_user: str) -> None:
         print(f"Message failed with error: {response_data['messages'][0]['error-text']}")
 
 @router.post("/send")
-@rate_limiter(max_requests_per_second=1, max_requests_per_day=5)
+@rate_limiter(max_requests_per_second=1, max_requests_per_day=10)
 async def send_sms_endpoint(sms_request: SmsRequest, user=Depends(get_api_key)):
     try:
         for phone_num in sms_request.to:

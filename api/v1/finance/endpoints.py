@@ -71,10 +71,11 @@ async def get_stock_data(
 
     selected_columns: list[str] = validate_column(columns)
 
-    if ValidColumns.CHANGE.value in columns.lower():
+    if columns and ValidColumns.CHANGE.value in columns.lower():
         data = calculate_period_change(data)
-
-    data = data[selected_columns].round(2)
+        data = data[selected_columns]
+        
+    data = data.round(2)
     data['Date'] = pd.to_datetime(data['Date'])
     data['Date'] = data['Date'].dt.strftime('%d-%m-%Y')
 
