@@ -1,9 +1,8 @@
 from pydantic import BaseModel, Field, EmailStr
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import ORJSONResponse
-from core.utils import create_email_message, send_email, validate_email
+from core.utils import create_email_message, send_email, validate_email, get_api_key
 from core.rate_limiter import rate_limiter
-from core.utils import get_api_key
 
 router = APIRouter()
 
@@ -15,7 +14,7 @@ class EmailRequest(BaseModel):
 
 @router.post('/send', response_class=ORJSONResponse)
 @rate_limiter(max_requests_per_second=1, max_requests_per_day=50)
-async def send_email_endpoint(email_request: EmailRequest, user=Depends(get_api_key)):
+async def send_email_endpoint(request: Request, email_request: EmailRequest, user=Depends(get_api_key)):
     """Sends an email using smtplib"""
     try:
         if len(email_request.to_users) > 10:

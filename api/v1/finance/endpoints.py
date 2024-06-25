@@ -63,7 +63,8 @@ async def get_stock_data(
     start: str = Query(..., description="The start date in dd-mm-yyyy format"),
     end: str = Query(None, description="The end date in dd-mm-yyyy format. Defaults to today if not provided"),
     interval: Interval = Query(Interval.ONE_DAY, description="The interval for the stock data"),
-    columns: str = Query(None, description="Comma-separated list of columns to export, at least 1 column is required")):
+    columns: str = Query(None, description=f"""Comma-separated list of lower case columns to export possibe columns: 
+                         high, low, open, close, dividends, volume, stock splits and change. Leave empty to get all the columns.""")):
     """Fetch stock data for a given ticker and date range."""
     verified_ticker: yf.Ticker = verify_ticker(ticker)
 
@@ -71,9 +72,11 @@ async def get_stock_data(
 
     selected_columns: list[str] = validate_column(columns)
 
-    if columns and ValidColumns.CHANGE.value in columns.lower():
+    if columns and 'change' in columns.lower() or columns is None:
         data = calculate_period_change(data)
-        data = data[selected_columns]
+        selected_columns.extend(['Interval Change (%)', 'Total Change (%)'])
+        
+    data = data[selected_columns]
         
     data = data.round(2)
     data['Date'] = pd.to_datetime(data['Date'])

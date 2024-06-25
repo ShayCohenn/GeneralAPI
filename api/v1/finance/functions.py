@@ -6,7 +6,8 @@ import pandas as pd
 import yfinance as yf
 from fastapi import HTTPException
 from fastapi.responses import ORJSONResponse, StreamingResponse, HTMLResponse
-from core.utils import str_to_date, get_current_date
+from cachetools import cached
+from core.utils import str_to_date, get_current_date, cache
 
 # ---------------------------------------------------------------- Enums ----------------------------------------------------------------
 
@@ -25,7 +26,6 @@ class ValidColumns(Enum):
     DIVIDENDS = 'dividends'
     VOLUME = 'volume'
     STOCK_SPLITS = 'stock splits'
-    CHANGE = 'change'
 
 class Interval(Enum):
     ONE_MINUTE = "1m"
@@ -44,6 +44,7 @@ class Interval(Enum):
 
 # ---------------------------------------------------------------- Functions ----------------------------------------------------------------
 
+@cached(cache)
 def verify_ticker(ticker: str) -> yf.Ticker:
     data = yf.Ticker(ticker)
     if not data.history(period="1d").empty:
@@ -72,18 +73,17 @@ def validate_column(columns: Union[str, None]) -> list[str]:
     
     for col in columns_list:
         col_name = col.title()
-        if col_name in valid_columns:
-            if col_name == 'Change':
-                selected_columns.extend(['Interval Change (%)', 'Total Change (%)'])
-            else:
-                selected_columns.append(col_name)
+        if col_name.lower() == 'change':
+            continue
+        elif col_name in valid_columns and col_name.lower() != 'change':
+            selected_columns.append(col_name)        
         else:
             raise HTTPException(status_code=400, detail=f"Invalid column '{col}' requested.")
     
     selected_columns.insert(0, 'Date')
     return selected_columns
 
-
+@cached(cache)
 def main_stock_data(ticker: yf.Ticker, start: str, end: str, interval: Interval) -> pd.DataFrame:
     validate_dates(start, end)
     
