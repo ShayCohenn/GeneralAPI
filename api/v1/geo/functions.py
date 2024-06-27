@@ -69,13 +69,13 @@ def query_cities(
         # Get country details from the dictionary
         country_details = country_details_dict.get(country_name, {})
 
-        item = City(
+        item = dict(City(
             city=city_name,
             country=country_name,
             flag=country_details.get("image") if flag else None,
             dial_code=country_details.get("dial_code") if dial_code else None,
             emoji=country_details.get("emoji") if emoji else None,
-        ).to_dict()
+        ))
 
         if city_name.lower() == city.lower():
             # If city_name is an exact match, add it to the list
@@ -101,12 +101,12 @@ def query_countries(country: str = "", flag: bool = False, dial_code: bool = Fal
     for result in results:
         country_name = result.get("name")
 
-        item = Country(
+        item = dict(Country(
             country=country_name,
             flag=result.get("image") if flag else None,
             dial_code=result.get("dial_code") if dial_code else None,
             emoji=result.get("emoji") if emoji else None
-        ).to_dict()
+        ))
 
         items.append(item)
 

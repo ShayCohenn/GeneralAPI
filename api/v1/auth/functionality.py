@@ -1,5 +1,4 @@
 import jwt
-import hmac
 import asyncio
 import secrets
 import hashlib
@@ -30,7 +29,7 @@ def get_password_hash(password: str) -> str:
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     stored_password_hash = get_password_hash(plain_password)
-    return hmac.compare_digest(stored_password_hash, hashed_password)
+    return secrets.compare_digest(stored_password_hash, hashed_password)
 
 def create_api_key() -> str:
     """Generate a unique API key"""
