@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class City:
     city: str
     country: str
@@ -9,12 +9,11 @@ class City:
     emoji: str = None
 
     def __iter__(self):
-        for attr in self.__slots__:
-            value = getattr(self, attr)
+        for attr, value in self.__dict__.items():
             if value is not None:
                 yield attr, value
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class Country:
     country: str
     flag: str = None
@@ -22,7 +21,6 @@ class Country:
     emoji: str = None
 
     def __iter__(self):
-        for attr in self.__slots__:
-            value = getattr(self, attr)
+        for attr, value in self.__dict__.items():
             if value is not None:
                 yield attr, value
