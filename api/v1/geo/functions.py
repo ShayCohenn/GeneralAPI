@@ -64,7 +64,7 @@ def query_cities(
 
     for result in results:
         city_name: str = result.get("name")
-        country_name: str = result.get("country")
+        country_name: str = result.get("country") 
 
         # Get country details from the dictionary
         country_details = country_details_dict.get(country_name, {})
