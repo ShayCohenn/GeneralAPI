@@ -28,7 +28,7 @@ async def login_google():
         status_code=200
         )
 
-@router.get("/auth/google", response_model=TokenResponse)
+@router.post("/auth/google", response_model=TokenResponse)
 async def auth_google(code: str, response: Response):
     token_url: str = "https://accounts.google.com/o/oauth2/token"
     data: dict = {
