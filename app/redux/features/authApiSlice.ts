@@ -16,11 +16,11 @@ const authApiSlice = apiSlice.injectEndpoints({
       query: () => "/auth/get-api-key",
     }),
     resetApiKey: builder.mutation({
-        query: () => ({
-          url: "auth/reset-api-key",
-          method: "GET",
-        }),
+      query: () => ({
+        url: "auth/reset-api-key",
+        method: "GET",
       }),
+    }),
     googleAuth: builder.mutation({
       query: ({ code }) => ({
         url: `/auth/auth/google?code=${encodeURIComponent(code)}`,
@@ -36,7 +36,7 @@ const authApiSlice = apiSlice.injectEndpoints({
     }),
     register: builder.mutation({
       query: ({ username, email, password }) => ({
-        url: "auth/login",
+        url: "auth/register",
         method: "POST",
         body: { username, email, password },
       }),
@@ -44,7 +44,7 @@ const authApiSlice = apiSlice.injectEndpoints({
     refresh: builder.mutation({
       query: () => ({
         url: "auth/refresh",
-        method: "POST",
+        method: "GET",
       }),
     }),
     logout: builder.mutation({
@@ -55,8 +55,22 @@ const authApiSlice = apiSlice.injectEndpoints({
     }),
     verify: builder.mutation({
       query: ({ token }) => ({
-        url: `auth/verify-email/${token}`,
+        url: `auth/verify-email?token=${token}`,
         method: "GET",
+      }),
+    }),
+    forgotPassword: builder.mutation({
+      query: (email) => ({
+        url: "auth/forgot-password",
+        method: "POST",
+        body: { email },
+      }),
+    }),
+    confirmResetPassword: builder.mutation({
+      query: ({ token, user, new_password }) => ({
+        url: "auth/confirm-reset-password",
+        method: "POST",
+        body: { token, user, new_password },
       }),
     }),
   }),
@@ -64,9 +78,13 @@ const authApiSlice = apiSlice.injectEndpoints({
 
 export const {
   useGetApiKeyQuery,
+  useResetApiKeyMutation,
   useGoogleAuthMutation,
   useLoginMutation,
   useRegisterMutation,
-  useRefreshMutation,
+  useVerifyMutation,
   useLogoutMutation,
+  useRefreshMutation,
+  useForgotPasswordMutation,
+  useConfirmResetPasswordMutation,
 } = authApiSlice;

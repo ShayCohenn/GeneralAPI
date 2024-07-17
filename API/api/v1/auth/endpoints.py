@@ -188,7 +188,7 @@ async def forgot_password(req: Email):
     
     message = create_email_message(
         from_user='GeneralAPI',
-        msg=f'Please reset your password by clicking on the following link: {URLS.FRONTEND_URL}/reset-password/{reset_token}/{str(user_record["_id"])}',
+        msg=f'Please reset your password by clicking on the following link: {URLS.FRONTEND_URL}/confirm-reset-password/{reset_token}/{str(user_record["_id"])}',
         subject='Reset your password')
     send_email(message=message, to_user=req.email)
     

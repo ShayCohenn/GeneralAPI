@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import ORJSONResponse
-from core.config import Docs, Messages
+from core.config import Docs, Messages, URLS
 from api.v1 import v1_router
 
 # ----------------------------------------------- App Initialization ----------------------------------------------------------------------
@@ -11,7 +11,7 @@ app = FastAPI(title="GeneralAPI",description=Docs.DESCRIPTION, version=Docs.VERS
 # ----------------------------------------------- Enable CORS for all origins -------------------------------------------------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[URLS.FRONTEND_URL],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
