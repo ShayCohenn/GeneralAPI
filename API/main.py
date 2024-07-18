@@ -1,7 +1,8 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import ORJSONResponse
 from core.config import Docs, Messages, URLS
+from starlette.middleware.base import BaseHTTPMiddleware
 from api.v1 import v1_router
 
 # ----------------------------------------------- App Initialization ----------------------------------------------------------------------
@@ -9,13 +10,22 @@ from api.v1 import v1_router
 app = FastAPI(title="GeneralAPI",description=Docs.DESCRIPTION, version=Docs.VERSION)
 
 # ----------------------------------------------- Enable CORS for all origins -------------------------------------------------------------
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[URLS.FRONTEND_URL],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+
+class CustomCORSMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        if request.method == "OPTIONS":
+            response = Response()
+        else:
+            response = await call_next(request)
+        origin = request.headers.get('origin')
+        if origin:
+            response.headers['Access-Control-Allow-Origin'] = origin
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
+            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+            response.headers['Access-Control-Allow-Headers'] = 'Authorization, Content-Type'
+        return response
+
+app.add_middleware(CustomCORSMiddleware)
 
 @app.exception_handler(404)
 async def custom_404_handler(_, __):
