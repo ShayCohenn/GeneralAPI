@@ -22,10 +22,9 @@ class AppConfig:
 
 # -------------------------------------------------------------------------- URLS -------------------------------------------------------------------
 
-_LOCAL_URL = "127.0.0.1:8000"
-_PRODUCTION_URL = "https://general-api.vercel.app/"
+_FRONTEND_LOCAL_URL = "http://127.0.0.1:3000"
+_FRONTEND_PRODUCTION_URL = "https://general-api.vercel.app/"
 
 class URLS:
-    API_URL = _PRODUCTION_URL if AppConfig.MODE == "production" else _LOCAL_URL
-    FRONTEND_URL = "http://127.0.0.1:3000"
+    FRONTEND_URL = _FRONTEND_PRODUCTION_URL if AppConfig.MODE == "production" else _FRONTEND_LOCAL_URL
     GOOGLE_REDIRECT_URI = f"{FRONTEND_URL}/auth/google"
