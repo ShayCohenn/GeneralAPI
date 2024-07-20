@@ -30,14 +30,6 @@ class RedisConfig:
     REDIS_PORT = int(os.getenv('REDIS_PORT'))
     REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
 
-class SecurityConfig:
-    SECRET_KEY = os.getenv('SECRET_KEY')
-    ALGORITHM = os.getenv('ALGORITHM')
-
-class GoogleConfig:
-    GOOGLE_ID = os.getenv('GOOGLE_CLIENT_ID')
-    GOOGLE_SECRET = os.getenv('GOOGLE_CLIENT_SECRET')
-
 class AppConfig:
     MODE = os.getenv('MODE')
 
