@@ -6,7 +6,7 @@ from fastapi.responses import ORJSONResponse
 
 # ----------------------------------------------- App Initialization ----------------------------------------------------------------------
 
-app = FastAPI()
+app = FastAPI(redoc_url=None, docs_url=None)
 
 # ----------------------------------------------- Enable CORS for all origins -------------------------------------------------------------
 

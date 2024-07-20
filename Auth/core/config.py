@@ -22,7 +22,7 @@ class AppConfig:
 
 class Messages:
     MAIN_ERROR_MESSAGE: str = {"error":"an error has occured please try again later, if this error persists please contact 'shay91847@gmail.com'"}
-    MAIN_404_MESSAGE: str = {"error":"Could not find this endpoint. Visit our documentation website at /docs"}
+    MAIN_404_MESSAGE: str = {"error":"Could not find this endpoint."}
 
 # -------------------------------------------------------------------------- URLS -------------------------------------------------------------------
 
