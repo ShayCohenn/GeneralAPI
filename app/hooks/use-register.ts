@@ -22,13 +22,16 @@ export default function useRegister() {
 
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
     register({ username, email, password })
       .unwrap()
-      .then(() => {
+      .then((a) => {        
         toast.success("Please Check your email to verify your account");
         router.push("/auth/login");
       })
       .catch((error) => {
+        console.log(error);
+        
         const errorMessage: string = error?.data?.detail || "Failed to register user."
         toast.error(errorMessage);
       });

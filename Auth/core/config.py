@@ -28,8 +28,8 @@ class AppConfig:
 
 # -------------------------------------------------------------------------- URLS -------------------------------------------------------------------
 
-_FRONTEND_LOCAL_URL = "http://localhost:3000"
-_FRONTEND_PRODUCTION_URL = "https://general-api.vercel.app"
+_FRONTEND_LOCAL_URL = ["http://localhost:3000", "http://127.0.0.1:3000"]
+_FRONTEND_PRODUCTION_URL = ["https://general-api.vercel.app"]
 
 class URLS:
     FRONTEND_URL: str = _FRONTEND_PRODUCTION_URL if AppConfig.MODE == "production" else _FRONTEND_LOCAL_URL
