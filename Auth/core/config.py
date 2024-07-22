@@ -39,5 +39,5 @@ class URLS:
 class Messages:
     MAIN_ERROR_MESSAGE: str = {"error":"an error has occured please try again later, if this error persists please contact 'shay91847@gmail.com'"}
     MAIN_404_MESSAGE: str = {"error":"Could not find this endpoint."}
-    ACCOUNT_VERIFY_EMAIL_MESSAGE: str = f"Please verify your account by clicking on the following link: {URLS.FRONTEND_URL}/activation/"
-    CHANGE_PASSWORD_EMAIL_MESSAGE: str = f"Please reset your password by clicking on the following link: {URLS.FRONTEND_URL}/confirm-reset-password/"
+    ACCOUNT_VERIFY_EMAIL_MESSAGE: str = f"Please verify your account by clicking on the following link: {URLS.FRONTEND_URL[0]}/activation/"
+    CHANGE_PASSWORD_EMAIL_MESSAGE: str = f"Please reset your password by clicking on the following link: {URLS.FRONTEND_URL[0]}/confirm-reset-password/"
