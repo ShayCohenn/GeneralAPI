@@ -9,7 +9,7 @@ import { Mutex } from "async-mutex";
 
 const mutex = new Mutex();
 const baseQuery = fetchBaseQuery({
-  baseUrl: process.env.NEXT_PUBLIC_HOST,
+  baseUrl: process.env.NEXT_MODE == "production" ? process.env.NEXT_PUBLIC_HOST : process.env.NEXT_PRIVATE_HOST,
   credentials: "include",
 });
 const baseQueryWithReauth: BaseQueryFn<
