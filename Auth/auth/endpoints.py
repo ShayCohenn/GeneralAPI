@@ -5,7 +5,7 @@ import requests
 from fastapi import APIRouter, HTTPException, Depends, Response, status, Cookie
 from fastapi.responses import ORJSONResponse
 from fastapi.security import OAuth2PasswordBearer
-from core.config import URLS, Setup
+from core.config import URLS, GoogleConfig, Secrets, Messages
 from core.db import users_db, redis_client
 from core.utils import validate_email, create_email_message, send_email
 from .models import Register, TokenResponse, UserSignin, Email, User, ConfirmResetPassword
@@ -25,7 +25,7 @@ router.add_event_handler("startup", startup_event)
 @router.get("/google/login", response_class=ORJSONResponse)
 async def login_google():
     return ORJSONResponse(
-        content={"url": f"https://accounts.google.com/o/oauth2/auth?response_type=code&client_id={Setup.GOOGLE_ID}&redirect_uri={URLS.GOOGLE_REDIRECT_URI}&scope=openid%20profile%20email&access_type=offline"},
+        content={"url": URLS.GOOOGLE_LOGIN_URL},
         status_code=200
         )
 
@@ -34,8 +34,8 @@ async def auth_google(code: str, response: Response):
     token_url: str = "https://accounts.google.com/o/oauth2/token"
     data: dict = {
         "code": code,
-        "client_id": Setup.GOOGLE_ID,
-        "client_secret": Setup.GOOGLE_SECRET,
+        "client_id": GoogleConfig.GOOGLE_ID,
+        "client_secret": GoogleConfig.GOOGLE_SECRET,
         "redirect_uri": URLS.GOOGLE_REDIRECT_URI,
         "grant_type": "authorization_code",
     }
@@ -91,14 +91,14 @@ async def register(user: Register):
         "created_at": datetime.now(),
         "active": True
     }
-    users_db.insert_one(user_data)
+    new_user = users_db.insert_one(user_data)
     message = create_email_message(
         from_user='GeneralAPI', 
-        msg=f"Please verify your email by clicking on the following link: {URLS.FRONTEND_URL}/auth/verify-email/{verification_token}",
-        subject='Verify your email')
+        msg=f"{Messages.ACCOUNT_VERIFY_EMAIL_MESSAGE}{new_user.inserted_id}/{verification_token}",
+        subject='Verify your account')
     send_email(message=message, to_user=user.email)
 
-    return ORJSONResponse(content={"message":"User create successfuly, Please check your email"}, status_code=200)
+    return ORJSONResponse(content={"message":"User create successfuly"}, status_code=200)
 
 @router.post("/login", response_model=TokenResponse)
 async def login_for_tokens(user: UserSignin, response: Response):
@@ -124,7 +124,7 @@ async def refresh(response: Response, refresh_token: str = Cookie(None)):
     if not refresh_token:
         raise token_exception
     
-    payload: dict = jwt.decode(refresh_token, Setup.SECRET_KEY, algorithms=Setup.ALGORITHM)
+    payload: dict = jwt.decode(refresh_token, Secrets.SECRET_KEY, algorithms=Secrets.ALGORITHM)
     username: str = payload["username"]
     if username == None:
         raise token_exception
@@ -142,10 +142,10 @@ async def refresh(response: Response, refresh_token: str = Cookie(None)):
 # ------------------------------------ Verify Email ----------------------------------------------
 
 @router.get("/verify-email", response_class=ORJSONResponse)
-async def verify_email(token: str):
+async def verify_email(uid: str, token: str):
     user_record = get_user(UserSearchField.VERIFICATION_TOKEN, token)
 
-    if not user_record:
+    if not user_record or str(user_record["_id"]) != uid:
         raise HTTPException(status_code=400, detail="Invalid or expired token")
     
     api_key: str = create_api_key()
@@ -189,7 +189,7 @@ async def forgot_password(req: Email):
     
     message = create_email_message(
         from_user='GeneralAPI',
-        msg=f'Please reset your password by clicking on the following link: {URLS.FRONTEND_URL}/confirm-reset-password/{reset_token}/{str(user_record["_id"])}',
+        msg=f"{Messages.CHANGE_PASSWORD_EMAIL_MESSAGE}{reset_token}/{str(user_record['_id'])}",
         subject='Reset your password')
     send_email(message=message, to_user=req.email)
     

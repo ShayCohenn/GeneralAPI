@@ -9,7 +9,7 @@ from fastapi import status, HTTPException, Cookie, Depends, Response
 from jwt.exceptions import InvalidTokenError
 from .models import TokenData, User
 from core.db import users_db, redis_client
-from core.config import Setup
+from core.config import Secrets
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 REFRESH_TOKEN_EXPIRE_DAYS = 30
@@ -23,7 +23,7 @@ class UserSearchField(Enum):
 
 
 def get_password_hash(password: str) -> str:
-    salt = hashlib.sha256(Setup.SECRET_KEY.encode('utf-8')).digest()
+    salt = hashlib.sha256(Secrets.SECRET_KEY.encode('utf-8')).digest()
     key = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 1000)
     return key.hex()
 
@@ -83,7 +83,7 @@ def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None
     else:
         expire = datetime.now(timezone.utc) + timedelta(minutes=15)
     to_encode.update({"exp": expire})
-    encoded_jwt: str = jwt.encode(to_encode, Setup.SECRET_KEY, algorithm=Setup.ALGORITHM)
+    encoded_jwt: str = jwt.encode(to_encode, Secrets.SECRET_KEY, algorithm=Secrets.ALGORITHM)
     return encoded_jwt
 
 
@@ -103,7 +103,7 @@ async def get_current_user(access_token: Optional[str] = Cookie(None)) -> User:
         if access_token is None:
             raise credentials_exception
         
-        payload: dict = jwt.decode(access_token, Setup.SECRET_KEY, algorithms=[Setup.ALGORITHM])
+        payload: dict = jwt.decode(access_token, Secrets.SECRET_KEY, algorithms=[Secrets.ALGORITHM])
         username: str = payload["username"]
         if username is None:
             raise credentials_exception
