@@ -41,4 +41,4 @@ const Page = ({ params }: Props) => {
   );
 };
 
-export default page;
+export default Page;
