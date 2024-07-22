@@ -12,7 +12,7 @@ interface Props {
   }
 }
 
-const page = ({ params }: Props) => {
+const Page = ({ params }: Props) => {
   const router = useRouter()
   const [verify] = useVerifyMutation()
 
