@@ -1,12 +1,12 @@
 "use client";
 
 import { useLogin } from "@/hooks";
-import Form from "./Form";
+import Form, { Config } from "./Form";
 
 const LoginForm = () => {
   const { isLoading, onChange, onSubmit, password, username } = useLogin();
 
-  const config = [
+  const config: Config[] = [
     {
       labelText: "Username",
       labelId: "username",
@@ -20,6 +20,10 @@ const LoginForm = () => {
       type: "password",
       value: password,
       required: true,
+      link: {
+        linkText:'Forgot Password?',
+        linkUrl:'/password-reset'
+      }
     },
   ];
 
