@@ -10,7 +10,6 @@ app = FastAPI(redoc_url=None, docs_url=None)
 
 # ----------------------------------------------- Enable CORS for all origins -------------------------------------------------------------
 
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=URLS.FRONTEND_URL,

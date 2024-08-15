@@ -65,6 +65,8 @@ async def remove_expired() -> None:
         for user in expired_unverified_users:
             await users_db.delete_one({"_id": user["_id"], "verified": False})
 
+        await asyncio.sleep(60)
+
 
 def get_user(search_field: UserSearchField, query: str) -> Optional[User]:
     user_record: User = users_db.find_one({search_field.value: query})
