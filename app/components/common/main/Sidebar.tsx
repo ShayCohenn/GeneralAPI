@@ -12,10 +12,10 @@ interface Props {
 
 const Sidebar = ({ isMenuOpen, mobile, width }: Props) => {
   return (
-    <div className={cn("" ,mobile && "fixed inset-0 z-50 top-16")}>
+    <div className={cn("relative top-16" ,mobile && "inset-0 z-50 fixed top-16")}>
       <div
         className={cn(
-          "transition-transform duration-300 ease-in-out fixed top-16 bg-slate-700",
+          "transition-transform duration-300 ease-in-out bg-slate-700",
           mobile && "h-[calc(100dvh-4rem)]",
           {
             "translate-x-0": isMenuOpen,
