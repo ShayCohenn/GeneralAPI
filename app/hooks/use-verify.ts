@@ -1,14 +1,14 @@
-import { useVerifyMutation } from "@/redux/features/authApiSlice";
+import { useRefreshMutation } from "@/redux/features/authApiSlice";
 import { setAuth, finishInitialLoad } from "@/redux/features/authSlice";
 import { useAppDispatch } from "@/redux/hooks";
 import { useEffect } from "react";
 
 export default function useVerify() {
   const dispatch = useAppDispatch();
-  const [verify] = useVerifyMutation();
+  const [refresh] = useRefreshMutation();
 
   useEffect(() => {
-    verify(null)
+    refresh(undefined)
       .unwrap()
       .then(() => {
         dispatch(setAuth());

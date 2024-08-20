@@ -37,7 +37,7 @@ const Sidebar = ({ isMenuOpen, mobile, width }: Props) => {
   const guestLinks = (
     <div>
       <Link
-        href="#"
+        href="/auth/login"
         className="flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary"
         prefetch={false}
       >
@@ -45,7 +45,7 @@ const Sidebar = ({ isMenuOpen, mobile, width }: Props) => {
         Login
       </Link>
       <Link
-        href="#"
+        href="/auth/register"
         className="flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary"
         prefetch={false}
       >
