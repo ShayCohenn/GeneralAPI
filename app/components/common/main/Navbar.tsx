@@ -1,5 +1,5 @@
 import { Button } from "../../ui/button";
-import { MenuIcon, MountainIcon } from "lucide-react";
+import { MenuIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -20,7 +20,7 @@ const Navbar = ({ isMenuOpen, setIsMenuOpen }: Props) => {
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
             <MenuIcon className="h-6 w-6" />
-            <span className="sr-only">Toggle navigation menu</span>
+            <span className="sr-only">Toggle Sidebar</span>
           </Button>
           <Link href="/" className="flex items-center gap-2" prefetch={false}>
             <Image

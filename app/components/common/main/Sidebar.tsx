@@ -1,8 +1,12 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { ContactIcon, HomeIcon, InfoIcon, ServerIcon } from "lucide-react";
+import { useLogoutMutation } from "@/redux/features/authApiSlice";
+import { useAppDispatch, useAppSelector } from "@/redux/hooks";
+import { File, HomeIcon, LogIn, User } from "lucide-react";
 import Link from "next/link";
+import { logout as setLogout } from "@/redux/features/authSlice";
+import { useRouter } from "next/navigation";
 
 interface Props {
   isMenuOpen: boolean;
@@ -11,15 +15,60 @@ interface Props {
 }
 
 const Sidebar = ({ isMenuOpen, mobile, width }: Props) => {
+  const dispatch = useAppDispatch();
+  const router = useRouter();
+
+  const [logout] = useLogoutMutation();
+  const { isAuthenticated } = useAppSelector((state) => state.auth);
+
+  const handleLogout = () => {
+    logout(null)
+      .unwrap()
+      .then(() => {
+        dispatch(setLogout());
+      })
+      .finally(() => {
+        router.push("/");
+      });
+  };
+
+  const authLinks = <div>logged in links</div>;
+
+  const guestLinks = (
+    <div>
+      <Link
+        href="#"
+        className="flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary"
+        prefetch={false}
+      >
+        <LogIn className="h-5 w-5" />
+        Login
+      </Link>
+      <Link
+        href="#"
+        className="flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary"
+        prefetch={false}
+      >
+        <User className="h-5 w-5" />
+        Register
+      </Link>
+    </div>
+  );
+
   return (
-    <div className={cn("relative top-16" ,mobile && "inset-0 z-50 fixed top-16")}>
+    <div
+      className={cn(
+        "relative top-16 bg-background",
+        mobile && "inset-0 z-50 fixed top-16"
+      )}
+    >
       <div
         className={cn(
-          "transition-transform duration-300 ease-in-out bg-slate-700",
+          "transition-transform duration-300 ease-in-out",
           mobile && "h-[calc(100dvh-4rem)]",
           {
             "translate-x-0": isMenuOpen,
-            "-translate-x-full": !isMenuOpen
+            "-translate-x-full": !isMenuOpen,
           }
         )}
       >
@@ -37,25 +86,11 @@ const Sidebar = ({ isMenuOpen, mobile, width }: Props) => {
             className="flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary"
             prefetch={false}
           >
-            <InfoIcon className="h-5 w-5" />
-            About
+            <File className="h-5 w-5" />
+            Documentation
           </Link>
-          <Link
-            href="#"
-            className="flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary"
-            prefetch={false}
-          >
-            <ServerIcon className="h-5 w-5" />
-            Services
-          </Link>
-          <Link
-            href="#"
-            className="flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary"
-            prefetch={false}
-          >
-            <ContactIcon className="h-5 w-5" />
-            Contact
-          </Link>
+          <hr />
+          {isAuthenticated ? authLinks : guestLinks}
         </nav>
       </div>
     </div>

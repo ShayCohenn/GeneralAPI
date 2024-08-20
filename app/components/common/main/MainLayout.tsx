@@ -14,16 +14,9 @@ interface Props {
 }
 
 const MainLayout = ({ children }: Props) => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(true);
   const [sidebarWidth, setSidebarWidth] = useState<number>(20); // Initial width
   const sidebarRef = useRef<ImperativePanelHandle>(null);
-
-  // useEffect(() => {
-  //   const savedMenuState = localStorage.getItem("isMenuOpen");
-  //   if (savedMenuState !== null) {
-  //     setIsMenuOpen(JSON.parse(savedMenuState));
-  //   }
-  // }, []);
 
   useEffect(() => {
     localStorage.setItem("isMenuOpen", JSON.stringify(isMenuOpen));
@@ -52,7 +45,7 @@ const MainLayout = ({ children }: Props) => {
         {/* Mobile View */}
         <div className="md:hidden block h-screen overflow-auto">
           <Navbar isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
-          {isMenuOpen && <Sidebar isMenuOpen={isMenuOpen} mobile />}
+          {!isMenuOpen && <Sidebar isMenuOpen={!isMenuOpen} mobile />}
           <div className="overflow-auto p-4 h-full">{children}</div>
         </div>
       </div>
