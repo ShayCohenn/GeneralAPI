@@ -158,7 +158,7 @@ def set_cookies(username: str, response: Response) -> dict[str, str]:
         max_age=access_token_expires.total_seconds(),
         expires=access_token_expiration.strftime("%a, %d-%b-%Y %H:%M:%S GMT"),
         path="/",
-        domain=URLS.FRONTEND_URL
+        domain=URLS.FRONTEND_URL[0]
     )
     response.set_cookie(
         key="refresh_token",
@@ -168,7 +168,7 @@ def set_cookies(username: str, response: Response) -> dict[str, str]:
         max_age=refresh_token_expires.total_seconds(),
         expires=refresh_token_expiration.strftime("%a, %d-%b-%Y %H:%M:%S GMT"),
         path="/",
-        domain=URLS.FRONTEND_URL
+        domain=URLS.FRONTEND_URL[0]
     )
     return {"access_token": access_token, "refresh_token": refresh_token}
 
