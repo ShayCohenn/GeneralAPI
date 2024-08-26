@@ -4,12 +4,12 @@ import secrets
 import hashlib
 from enum import Enum
 from typing import Optional, Union
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, UTC
 from fastapi import status, HTTPException, Cookie, Depends, Response
 from jwt.exceptions import InvalidTokenError
 from .models import TokenData, User
 from core.db import users_db, redis_client
-from core.config import Secrets
+from core.config import Secrets, AppConfig, URLS
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 REFRESH_TOKEN_EXPIRE_DAYS = 30
@@ -145,12 +145,30 @@ def set_cookies(username: str, response: Response) -> dict[str, str]:
     # Store refresh token in Redis with expiration time
     redis_client.setex(f"refresh_token:{username}", int(refresh_token_expires.total_seconds()), refresh_token)
     
+    # Calculate expiration times
+    access_token_expiration = datetime.now(UTC) + access_token_expires
+    refresh_token_expiration = datetime.now(UTC) + refresh_token_expires
+    
     # Set cookies in the response
     response.set_cookie(
-        key="access_token", value=access_token, httponly=True, max_age=access_token_expires.total_seconds(), path="/"
+        key="access_token",
+        value=access_token,
+        secure=AppConfig.PRODUCTION,
+        httponly=True,
+        max_age=access_token_expires.total_seconds(),
+        expires=access_token_expiration.strftime("%a, %d-%b-%Y %H:%M:%S GMT"),
+        path="/",
+        domain=URLS.FRONTEND_URL
     )
     response.set_cookie(
-        key="refresh_token", value=refresh_token, httponly=True, max_age=refresh_token_expires.total_seconds(), path="/"
+        key="refresh_token",
+        value=refresh_token,
+        secure=AppConfig.PRODUCTION,
+        httponly=True,
+        max_age=refresh_token_expires.total_seconds(),
+        expires=refresh_token_expiration.strftime("%a, %d-%b-%Y %H:%M:%S GMT"),
+        path="/",
+        domain=URLS.FRONTEND_URL
     )
     return {"access_token": access_token, "refresh_token": refresh_token}
 

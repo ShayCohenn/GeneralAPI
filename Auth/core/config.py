@@ -24,7 +24,7 @@ class EmailConfig:
     PASSWORD: str = getenv('PASSWORD')
 
 class AppConfig:
-    MODE: str = getenv('MODE')
+    PRODUCTION: bool = getenv('MODE') == 'production'
 
 # -------------------------------------------------------------------------- URLS -------------------------------------------------------------------
 
@@ -32,7 +32,7 @@ _FRONTEND_LOCAL_URL = ["http://localhost:3000", "http://127.0.0.1:3000"]
 _FRONTEND_PRODUCTION_URL = ["https://generalapi.vercel.app"]
 
 class URLS:
-    FRONTEND_URL: str = _FRONTEND_PRODUCTION_URL if AppConfig.MODE == "production" else _FRONTEND_LOCAL_URL
+    FRONTEND_URL: str = _FRONTEND_PRODUCTION_URL if AppConfig.PRODUCTION else _FRONTEND_LOCAL_URL
     GOOGLE_REDIRECT_URI: str = f"{FRONTEND_URL}/auth/google"
     GOOOGLE_LOGIN_URL: str = f"https://accounts.google.com/o/oauth2/auth?response_type=code&client_id={GoogleConfig.GOOGLE_ID}&redirect_uri={GOOGLE_REDIRECT_URI}&scope=openid%20profile%20email&access_type=offline"
 
